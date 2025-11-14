@@ -1,25 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
-<meta http-equiv="cache-control" content="no-cache,no-store,must-revalidate">
-<title>Loading...</title>
-</head>
-<body>
-
-
-
-
-
-
-
-
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Biblioteca Avanzada de Scripts de Roblox</title>
@@ -266,6 +247,7 @@
             height: 100%;
             transform-style: preserve-3d;
             touch-action: pan-y pinch-zoom;
+            padding: 0 100px;
         }
 
         .script-card {
@@ -491,6 +473,10 @@
                 font-size: 0.8rem;
                 padding: 10px 15px;
             }
+
+            .coverflow-track {
+                padding: 0 50px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -561,27 +547,7 @@
                 height: 40px;
                 font-size: 1rem;
             }
-        }
 
-        .script-card {
-            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        body {
-            overflow-x: hidden;
-        }
-
-        .coverflow-track {
-            padding: 0 100px;
-        }
-
-        @media (max-width: 768px) {
-            .coverflow-track {
-                padding: 0 50px;
-            }
-        }
-
-        @media (max-width: 480px) {
             .coverflow-track {
                 padding: 0 30px;
             }
@@ -603,7 +569,7 @@
         </svg>
     </div>
 
-    <h1>Biblioteca de Scripts </h1>
+    <h1>Biblioteca de Scripts</h1>
 
     <div class="search-container">
         <input type="text" class="search-bar" id="searchInput" placeholder="🔍 Buscar scripts...">
@@ -676,7 +642,6 @@
                 imageUrl: "https://tr.rbxcdn.com/180DAY-92b36c16176e790f87286e5680e39c0c/768/432/Image/Webp/noFilter",
                 robloxUrl: "https://www.roblox.com/es/games/71315343/SSJ3-Dragon-Ball-Rage",
                 scriptUrl: "https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua" }
-
         ];
 
         async function updateVisitorCount() {
@@ -1113,8 +1078,72 @@
             }
         });
 
+        function getGameFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameParam = urlParams.get('game');
+            
+            if (gameParam) {
+                return decodeURIComponent(gameParam);
+            }
+            
+            const hash = window.location.hash.slice(1);
+            if (hash) {
+                return decodeURIComponent(hash);
+            }
+            
+            const pathParts = window.location.pathname.split('/').filter(p => p);
+            const lastPart = pathParts[pathParts.length - 1];
+            if (lastPart && lastPart !== 'Web.biblioteca' && !lastPart.includes('.html')) {
+                return decodeURIComponent(lastPart).replace(/-/g, ' ');
+            }
+            
+            return null;
+        }
+
+        function findGameIndex(gameName) {
+            if (!gameName) return 0;
+            
+            const searchTerm = gameName.toLowerCase().trim();
+            
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const cardGameName = card.getAttribute('data-game') || 
+                                   card.querySelector('.card-title').textContent.trim();
+                const acronym = generateAcronym(cardGameName);
+                
+                if (cardGameName.toLowerCase() === searchTerm ||
+                    cardGameName.toLowerCase().includes(searchTerm) ||
+                    searchTerm.includes(cardGameName.toLowerCase()) ||
+                    acronym.toLowerCase() === searchTerm ||
+                    cardGameName.toLowerCase().replace(/\s+/g, '') === searchTerm.replace(/\s+/g, '') ||
+                    cardGameName.toLowerCase().replace(/\s+/g, '-') === searchTerm.replace(/\s+/g, '-')) {
+                    return i;
+                }
+            }
+            
+            return 0;
+        }
+
         function init() {
             renderGameCards();
+            
+            const gameFromURL = getGameFromURL();
+            if (gameFromURL) {
+                const gameIndex = findGameIndex(gameFromURL);
+                currentIndex = gameIndex;
+                
+                setTimeout(() => {
+                    updateCoverflow();
+                    
+                    if (gameIndex > 0) {
+                        const gameName = cards[gameIndex].getAttribute('data-game');
+                        showCopyNotification(`¡Mostrando: ${gameName}!`);
+                    }
+                }, 100);
+            } else {
+                updateCoverflow();
+            }
+            
             updateVisitorCount();
             setInterval(updateVisitorCount, 30000);
         }
@@ -1122,27 +1151,5 @@
         window.addEventListener('load', init);
         window.addEventListener('resize', updateCoverflow);
     </script>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script>
-!function(){const a=e=>{e.preventDefault();e.stopPropagation();return!1},b=()=>{const t=window.location;if(t.href&&!t.href.includes("#enc_")){const e=btoa(unescape(encodeURIComponent(t.href))).split("").reverse().join("").split("").map((t,e)=>String.fromCharCode(t.charCodeAt(0)^e%7)).join("");history.replaceState(null,"","#enc_"+btoa(e))}};b();const c=setInterval(()=>{const t=window.location.href;t.includes("#enc_")||b()},3e3);["contextmenu","selectstart","copy","cut","paste","dragstart","drop"].forEach(t=>document.addEventListener(t,a));document.addEventListener("keydown",t=>{if("F12"===t.key||123===t.keyCode||t.ctrlKey&&t.shiftKey&&["I","J","C","K"].includes(t.key)||t.ctrlKey&&["U","S"].includes(t.key))return a(t)});const d=e=>{const t=atob(e.replace("#enc_",""));return decodeURIComponent(escape(t.split("").map((t,e)=>String.fromCharCode(t.charCodeAt(0)^e%7)).join("").split("").reverse().join("")))};window.addEventListener("hashchange",()=>{const t=window.location.hash;if(t.startsWith("#enc_"))try{const e=d(t);console.log("Decoded:",e)}catch(t){}});Object.defineProperty(window,"location",{get:()=>new Proxy(window.location,{get:(t,e)=>["href","toString"].includes(e)?"Protected URL":t[e]}),configurable:!1});const f=document.createElement;document.createElement=function(...t){const e=f.apply(this,t);return["iframe","object","embed"].includes(t[0])&&(e.remove(),null),e};const g=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(t,e,...a){return g.call(this,t,e,...a)};[document.write,document.writeln].forEach(t=>{const e=t;t=function(t){if("string"==typeof t&&(t.includes("<iframe")||t.includes("<script")))return;return e.call(this,t)}});const h=new MutationObserver(t=>{t.forEach(t=>{t.addedNodes.forEach(t=>{"SCRIPT"===t.nodeName&&((t.src||"").includes("devtools")||(t.textContent||"").includes("debugger"))&&t.remove()})})});h.observe(document.documentElement,{childList:!0,subtree:!0});Object.seal(window);Object.seal(document);const k=Object.getOwnPropertyDescriptor;Object.getOwnPropertyDescriptor=function(t,e){return["location","href","cookie"].includes(e)?void 0:k(t,e)};const l=window.open;window.open=function(t,...e){if(!t||t.startsWith("#enc_"))return l(t,...e);const a=btoa(unescape(encodeURIComponent(t))).split("").reverse().join("").split("").map((t,e)=>String.fromCharCode(t.charCodeAt(0)^e%7)).join("");return l("#enc_"+btoa(a),...e)};Object.defineProperty(console,"_commandLineAPI",{get:()=>{throw new Error("Blocked")},set:()=>{}});let m=0;setInterval(()=>{const t=window.outerWidth-window.innerWidth,e=window.outerHeight-window.innerHeight;(t>200||e>200)&&(m++,m>2&&(document.body.innerHTML="",window.location.href="about:blank"))},2e3);const n=()=>{debugger};setInterval(n,5e3);Object.defineProperty(navigator,"webdriver",{get:()=>void 0});Object.defineProperty(navigator,"plugins",{get:()=>[]});["chrome","_phantom","callPhantom","__nightmare"].forEach(t=>{window[t]=void 0});const o=Element.prototype.setAttribute;Element.prototype.setAttribute=function(t,e){return["src","href","action"].includes(t.toLowerCase())&&e&&!e.startsWith("#enc_")&&!e.startsWith("data:")&&!e.startsWith("javascript:")&&"about:blank"!==e?void 0:o.call(this,t,e)};const p=Element.prototype.getAttribute;Element.prototype.getAttribute=function(t){const e=p.call(this,t);return["src","href","action"].includes(t.toLowerCase())&&e&&!e.startsWith("#enc_")?"Protected":e};document.domain="";Object.defineProperty(document,"domain",{value:"",writable:!1,configurable:!1});Object.defineProperty(document,"URL",{get:()=>"Protected",writable:!1});Object.defineProperty(document,"cookie",{get:()=>"",set:()=>{},configurable:!1});const q=performance.now();Object.defineProperty(performance,"now",{value:()=>q,writable:!1});Object.defineProperty(Date,"now",{value:()=>q,writable:!1});if(window.localStorage){const t=window.localStorage;Object.defineProperty(window,"localStorage",{get:()=>new Proxy({},{get:()=>null,set:()=>!1}),set:()=>{}})}if(window.sessionStorage){const t=window.sessionStorage;Object.defineProperty(window,"sessionStorage",{get:()=>new Proxy({},{get:()=>null,set:()=>!1}),set:()=>{}})}document.addEventListener("touchstart",t=>{t.touches.length>1&&a(t)},{passive:!1});document.addEventListener("gesturestart",a);document.addEventListener("gesturechange",a);window.addEventListener("blur",()=>b());document.addEventListener("visibilitychange",()=>{document.hidden||b()});const r=new Proxy(window,{get:(t,e)=>["location","document"].includes(e)?new Proxy({},{get:()=>"Protected"}):t[e],set:()=>!1});window.top=r;window.parent=r;window.self=r;const s=eval;window.eval=function(t){return"string"==typeof t&&(t.includes("location")||t.includes("cookie"))?void 0:s(t)};const u=Function.prototype.constructor;Function.prototype.constructor=new Proxy(u,{construct:()=>function(){},apply:()=>function(){}});if(window.Proxy){const t=window.Proxy;window.Proxy=function(e,a){return a.get&&(a.get=(t,e)=>["location","cookie","href"].includes(e)?"Protected":a.get?a.get(t,e):t[e]),new t(e,a)}}}();
-</script>
 </body>
 </html>
