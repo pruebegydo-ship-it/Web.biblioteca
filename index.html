@@ -390,25 +390,28 @@
         }
 
         .chat-input-section {
-            padding: 15px;
+            padding: 12px 15px;
             background: rgba(0, 0, 0, 0.5);
             border-top: 1px solid rgba(0, 255, 204, 0.3);
+            flex-shrink: 0;
         }
 
         .chat-input-container {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            align-items: center;
         }
 
         #chatMessageInput {
             flex: 1;
-            padding: 10px;
+            padding: 10px 12px;
             border: 2px solid rgba(0, 255, 204, 0.5);
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.05);
             color: #fff;
             font-size: 0.85rem;
             outline: none;
+            min-width: 0;
         }
 
         #chatMessageInput::placeholder {
@@ -419,12 +422,14 @@
             background: linear-gradient(45deg, #00ffcc, #00d4aa);
             color: #000;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 18px;
             border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
             font-size: 0.85rem;
             transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         #chatSendBtn:hover {
@@ -434,6 +439,77 @@
         #chatSendBtn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .image-upload-btn {
+            background: linear-gradient(45deg, #00ffcc, #00d4aa);
+            color: #000;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .image-upload-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .image-upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .image-upload-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: #000;
+            flex-shrink: 0;
+        }
+
+        .image-upload-btn .btn-text {
+            display: inline;
+        }
+
+        @media (max-width: 360px) {
+            .chat-input-container {
+                gap: 2px;
+            }
+
+            #chatMessageInput {
+                padding: 6px 8px;
+                font-size: 0.7rem;
+            }
+
+            #chatSendBtn {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+            }
+
+            .image-upload-btn {
+                padding: 6px 7px;
+            }
+
+            .image-upload-btn svg {
+                width: 11px;
+                height: 11px;
+            }
+
+            .image-upload-btn .btn-text {
+                font-size: 0.75rem;
+            }
         }
 
         .loading-chat {
@@ -825,6 +901,38 @@
                 bottom: 80px;
             }
 
+            .chat-input-section {
+                padding: 10px;
+            }
+
+            .chat-input-container {
+                gap: 4px;
+            }
+
+            #chatMessageInput {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+
+            #chatSendBtn {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+
+            .image-upload-btn {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+
+            .image-upload-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .image-upload-btn .btn-text {
+                font-size: 0.9rem;
+            }
+
             .visitor-counter {
                 top: 15px;
                 left: 15px;
@@ -898,6 +1006,37 @@
             .chat-btn svg {
                 width: 24px;
                 height: 24px;
+            }
+
+            .chat-input-section {
+                padding: 8px;
+            }
+
+            .chat-input-container {
+                gap: 3px;
+            }
+
+            #chatMessageInput {
+                padding: 7px 8px;
+                font-size: 0.75rem;
+            }
+
+            #chatSendBtn {
+                padding: 7px 12px;
+                font-size: 0.75rem;
+            }
+
+            .image-upload-btn {
+                padding: 7px 8px;
+            }
+
+            .image-upload-btn svg {
+                width: 12px;
+                height: 12px;
+            }
+
+            .image-upload-btn .btn-text {
+                font-size: 0.8rem;
             }
 
             .visitor-counter {
@@ -1006,7 +1145,14 @@
 
         <div class="chat-input-section">
             <div class="chat-input-container">
-                <input type="text" id="chatMessageInput" placeholder="Escribe tu mensaje... (#juego)" maxlength="500">
+                <input type="file" id="imageInput" accept="image/*">
+                <button class="image-upload-btn" id="uploadImageBtn" onclick="openFileInput()" title="Subir imagen">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/>
+                    </svg>
+                    <span class="btn-text">📷</span>
+                </button>
+                <input type="text" id="chatMessageInput" placeholder="Escribe un mensaje..." maxlength="500">
                 <button id="chatSendBtn" onclick="sendChatMessage()">Enviar</button>
             </div>
         </div>
@@ -1059,6 +1205,8 @@
     <script>
         const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZqCbnJDnkIZ_lk8OPxPQgXFqRSSBjUOHX7wr3G9VklP07zB9_0FHPNiF6RE4Uvx5T/exec";
         const CHAT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmW0T65zVV0dm4Rc1_h20XnWjB08SzS9BETj6KyAdRcatxymQDdjXWOG3ws6e0brdjhA/exec';
+        const IMGBB_API_KEY = 'dcd38e938cece07962c8f5a37df2f131';
+        const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
         const VISITOR_COUNT_KEY = 'hasVisited';
         const LOCAL_VISITOR_COUNT_KEY = 'VISITOR_COUNT';
 
@@ -1219,6 +1367,7 @@
                    url.includes('gstatic.com/images') || 
                    url.includes('rbxcdn.com') ||
                    url.includes('imgur.com') ||
+                   url.includes('i.ibb.co') ||
                    url.includes('cdn.discordapp.com/attachments');
         }
 
@@ -1644,6 +1793,106 @@
                 suggestionsDiv.style.display = 'none';
             }
         }
+
+        function openFileInput() {
+            document.getElementById('imageInput').click();
+        }
+
+        async function uploadImageToImgBB(file) {
+            const uploadBtn = document.getElementById('uploadImageBtn');
+            const originalHTML = uploadBtn.innerHTML;
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: #000; animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="#000" stroke-width="4" fill="none" stroke-dasharray="31.4 31.4" stroke-dashoffset="0"/></svg> <span class="btn-text">⏳</span>';
+            
+            const style = document.createElement('style');
+            style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const base64Image = e.target.result.split(',')[1];
+                    
+                    const formData = new FormData();
+                    formData.append('key', IMGBB_API_KEY);
+                    formData.append('image', base64Image);
+                    
+                    const response = await fetch(IMGBB_API_URL, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const imageUrl = data.data.url;
+                        
+                        const messageData = {
+                            message: imageUrl,
+                            username: chatUsername,
+                            userId: chatUserId,
+                            timestamp: Date.now(),
+                            replyTo: replyingTo ? replyingTo.msgId : null
+                        };
+                        
+                        localStorage.setItem('pendingChatMessage', JSON.stringify(messageData));
+                        
+                        try {
+                            let url = `${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(imageUrl)}`;
+                            
+                            if (messageData.replyTo) {
+                                url += `&replyTo=${encodeURIComponent(messageData.replyTo)}`;
+                            }
+                            
+                            await fetch(url);
+                            
+                            localStorage.removeItem('pendingChatMessage');
+                            cancelReply();
+                            
+                            setTimeout(() => syncMessagesFromServer(), 800);
+                            
+                            showCopyNotification('✨ Imagen enviada!');
+                        } catch (error) {
+                            console.error('Error al enviar mensaje:', error);
+                            showCopyNotification('❌ Error al enviar la imagen');
+                        }
+                    } else {
+                        showCopyNotification('❌ Error al subir la imagen');
+                    }
+                    
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = originalHTML;
+                    document.head.removeChild(style);
+                };
+                
+                reader.onerror = () => {
+                    showCopyNotification('❌ Error al leer la imagen');
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = originalHTML;
+                    document.head.removeChild(style);
+                };
+                
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Error al subir imagen:', error);
+                showCopyNotification('❌ Error al subir la imagen');
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = originalHTML;
+                if (style && style.parentNode) {
+                    document.head.removeChild(style);
+                }
+            }
+        }
+
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                uploadImageToImgBB(file);
+            } else {
+                showCopyNotification('⚠️ Por favor selecciona una imagen válida');
+            }
+            e.target.value = '';
+        });
 
         document.addEventListener('DOMContentLoaded', async function() {
             await checkPendingMessage();
