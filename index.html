@@ -70,6 +70,248 @@
             fill: white;
         }
 
+        .chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #00ffcc, #00d4aa);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.4);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 255, 204, 0.6);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .chat-btn svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        .chat-container {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 255, 204, 0.3);
+            border: 2px solid rgba(0, 255, 204, 0.5);
+            z-index: 999;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+        }
+
+        .chat-container.active {
+            display: flex;
+        }
+
+        .chat-header {
+            background: linear-gradient(45deg, #00ffcc, #00d4aa);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .chat-user-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-user-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: #00ffcc;
+        }
+
+        .chat-username {
+            font-weight: 600;
+            color: #000;
+            font-size: 0.9rem;
+        }
+
+        .chat-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-message {
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .message-icon {
+            width: 25px;
+            height: 25px;
+            background: rgba(0, 255, 204, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message-icon svg {
+            width: 14px;
+            height: 14px;
+            fill: #00ffcc;
+        }
+
+        .message-username {
+            font-weight: bold;
+            color: #00ffcc;
+            font-size: 0.85rem;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: #999;
+            margin-left: auto;
+        }
+
+        .message-text {
+            color: #ddd;
+            line-height: 1.4;
+            word-wrap: break-word;
+            padding-left: 33px;
+            font-size: 0.85rem;
+        }
+
+        .game-mention {
+            background: linear-gradient(45deg, #00ffcc, #00d4aa);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .game-mention:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 255, 204, 0.4);
+        }
+
+        .chat-input-section {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(0, 255, 204, 0.3);
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        #chatMessageInput {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid rgba(0, 255, 204, 0.5);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        #chatMessageInput::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        #chatSendBtn {
+            background: linear-gradient(45deg, #00ffcc, #00d4aa);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        #chatSendBtn:hover {
+            transform: scale(1.05);
+        }
+
+        #chatSendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading-chat {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 0.85rem;
+        }
+
         .vip-badge {
             position: absolute;
             top: 10px;
@@ -433,6 +675,25 @@
                 height: 26px;
             }
 
+            .chat-btn {
+                width: 50px;
+                height: 50px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .chat-btn svg {
+                width: 26px;
+                height: 26px;
+            }
+
+            .chat-container {
+                width: 90%;
+                height: 70vh;
+                right: 5%;
+                bottom: 80px;
+            }
+
             .visitor-counter {
                 top: 15px;
                 left: 15px;
@@ -492,6 +753,18 @@
             }
 
             .discord-btn svg {
+                width: 24px;
+                height: 24px;
+            }
+
+            .chat-btn {
+                width: 45px;
+                height: 45px;
+                bottom: 15px;
+                right: 15px;
+            }
+
+            .chat-btn svg {
                 width: 24px;
                 height: 24px;
             }
@@ -569,6 +842,40 @@
         </svg>
     </div>
 
+    <div class="chat-btn" onclick="toggleChat()">
+        <svg viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            <circle cx="12" cy="10" r="1"/>
+            <circle cx="8" cy="10" r="1"/>
+            <circle cx="16" cy="10" r="1"/>
+        </svg>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <div class="chat-header-left" onclick="openChatNameModal()">
+                <div class="chat-user-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                </div>
+                <span class="chat-username" id="chatUsername">Anónimo</span>
+            </div>
+            <button class="chat-close" onclick="toggleChat()">×</button>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="loading-chat">Cargando mensajes...</div>
+        </div>
+
+        <div class="chat-input-section">
+            <div class="chat-input-container">
+                <input type="text" id="chatMessageInput" placeholder="Escribe tu mensaje... (#juego)" maxlength="500">
+                <button id="chatSendBtn" onclick="sendChatMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
     <h1>Biblioteca de Scripts</h1>
 
     <div class="search-container">
@@ -615,6 +922,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script>
         const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZqCbnJDnkIZ_lk8OPxPQgXFqRSSBjUOHX7wr3G9VklP07zB9_0FHPNiF6RE4Uvx5T/exec";
+        const CHAT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmW0T65zVV0dm4Rc1_h20XnWjB08SzS9BETj6KyAdRcatxymQDdjXWOG3ws6e0brdjhA/exec';
         const VISITOR_COUNT_KEY = 'hasVisited';
         const LOCAL_VISITOR_COUNT_KEY = 'VISITOR_COUNT';
 
@@ -643,6 +951,437 @@
                 robloxUrl: "https://www.roblox.com/es/games/71315343/SSJ3-Dragon-Ball-Rage",
                 scriptUrl: "https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua" }
         ];
+
+        let chatUserId = localStorage.getItem('chatUserId') || 'anon_' + Date.now();
+        let chatUsername = 'Anónimo';
+        let isChatOpen = false;
+        let chatDB;
+        let isSyncing = false;
+        let displayedMessageIds = new Set();
+        
+        localStorage.setItem('chatUserId', chatUserId);
+
+        function generateMessageId(msg) {
+            return `msg_${msg.userId}_${msg.timestamp}_${msg.message.substring(0, 20)}`;
+        }
+
+        function getUserColor(userId) {
+            let hash = 0;
+            for (let i = 0; i < userId.length; i++) {
+                hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            const colors = [
+                'rgba(255, 107, 107, 0.15)',
+                'rgba(78, 205, 196, 0.15)',
+                'rgba(255, 195, 113, 0.15)',
+                'rgba(162, 155, 254, 0.15)',
+                'rgba(255, 159, 243, 0.15)',
+                'rgba(99, 205, 218, 0.15)',
+                'rgba(253, 167, 223, 0.15)',
+                'rgba(181, 234, 215, 0.15)',
+                'rgba(255, 218, 121, 0.15)',
+                'rgba(189, 147, 249, 0.15)'
+            ];
+            
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function initChatDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('ChatDatabase', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    chatDB = request.result;
+                    resolve(chatDB);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('messages')) {
+                        const objectStore = db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+                        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                };
+            });
+        }
+
+        async function saveChatToIndexedDB(messages) {
+            if (!chatDB) return;
+            
+            const transaction = chatDB.transaction(['messages'], 'readwrite');
+            const objectStore = transaction.objectStore('messages');
+            
+            objectStore.clear();
+            
+            messages.forEach(msg => {
+                objectStore.add({
+                    userId: msg.userId,
+                    username: msg.username,
+                    message: msg.message,
+                    timestamp: msg.timestamp
+                });
+            });
+            
+            return transaction.complete;
+        }
+
+        async function loadChatFromIndexedDB() {
+            if (!chatDB) return [];
+            
+            return new Promise((resolve, reject) => {
+                const transaction = chatDB.transaction(['messages'], 'readonly');
+                const objectStore = transaction.objectStore('messages');
+                const request = objectStore.getAll();
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        function toggleChat() {
+            const chatContainer = document.getElementById('chatContainer');
+            isChatOpen = !isChatOpen;
+            chatContainer.classList.toggle('active');
+            if (isChatOpen) {
+                loadChatMessages();
+                loadChatProfile();
+            }
+        }
+
+        function loadChatProfile() {
+            const savedUsername = localStorage.getItem('chatUsername');
+            if (savedUsername) {
+                chatUsername = savedUsername;
+            }
+            document.getElementById('chatUsername').textContent = chatUsername;
+        }
+
+        function openChatNameModal() {
+            const newName = prompt('Ingresa tu nombre de usuario:', chatUsername);
+            if (newName && newName.trim()) {
+                chatUsername = newName.trim();
+                localStorage.setItem('chatUsername', chatUsername);
+                document.getElementById('chatUsername').textContent = chatUsername;
+            }
+        }
+
+        function createMessageElement(msg) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+            messageDiv.style.backgroundColor = msg.userId === chatUserId ? 'rgba(0, 255, 204, 0.15)' : getUserColor(msg.userId);
+            
+            const msgId = generateMessageId(msg);
+            messageDiv.setAttribute('data-msg-id', msgId);
+            
+            const time = new Date(msg.timestamp).toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const processedMessage = processMentions(msg.message);
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                    </div>
+                    <span class="message-username">${msg.username}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-text">${processedMessage}</div>
+            `;
+            
+            return messageDiv;
+        }
+
+        function addMessageToDOM(msg) {
+            const container = document.getElementById('chatMessages');
+            const msgId = generateMessageId(msg);
+            
+            if (displayedMessageIds.has(msgId)) {
+                return false;
+            }
+            
+            const existingMsg = container.querySelector(`[data-msg-id="${msgId}"]`);
+            if (existingMsg) {
+                return false;
+            }
+            
+            const loadingMsg = container.querySelector('.loading-chat');
+            if (loadingMsg) {
+                container.removeChild(loadingMsg);
+            }
+            
+            const messageDiv = createMessageElement(msg);
+            container.appendChild(messageDiv);
+            displayedMessageIds.add(msgId);
+            return true;
+        }
+
+        function displayMessages(messages) {
+            if (!messages || messages.length === 0) {
+                const container = document.getElementById('chatMessages');
+                if (container.children.length === 0) {
+                    container.innerHTML = '<div class="loading-chat">No hay mensajes aún. ¡Sé el primero en escribir!</div>';
+                }
+                return;
+            }
+            
+            const container = document.getElementById('chatMessages');
+            const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+            
+            messages.forEach(msg => {
+                addMessageToDOM(msg);
+            });
+            
+            if (wasAtBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        async function loadChatMessages() {
+            try {
+                const container = document.getElementById('chatMessages');
+                
+                const cachedMessages = await loadChatFromIndexedDB();
+                if (cachedMessages.length > 0) {
+                    displayMessages(cachedMessages);
+                } else {
+                    container.innerHTML = '<div class="loading-chat">Cargando mensajes...</div>';
+                }
+                
+                if (!isSyncing) {
+                    syncMessagesFromServer();
+                }
+            } catch (error) {
+                console.error('Error al cargar mensajes del chat:', error);
+            }
+        }
+
+        async function syncMessagesFromServer() {
+            if (isSyncing) return;
+            isSyncing = true;
+            
+            try {
+                const response = await fetch(`${CHAT_SCRIPT_URL}?action=getMessages`);
+                const data = await response.json();
+                
+                if (data.messages && data.messages.length > 0) {
+                    await saveChatToIndexedDB(data.messages);
+                    displayMessages(data.messages);
+                }
+            } catch (error) {
+                console.error('Error al sincronizar mensajes:', error);
+            } finally {
+                isSyncing = false;
+            }
+        }
+
+        function processMentions(message) {
+            let processed = message;
+            gamesData.forEach(game => {
+                const gameAcronym = generateAcronym(game.name);
+                const regexName = new RegExp('#' + game.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const regexAcronym = new RegExp('#' + gameAcronym.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                
+                processed = processed.replace(regexName, `<span class="game-mention" onclick="mentionGameClick('${game.name}')">#${game.name}</span>`);
+                processed = processed.replace(regexAcronym, `<span class="game-mention" onclick="mentionGameClick('${game.name}')">#${gameAcronym}</span>`);
+            });
+            return processed;
+        }
+
+        function mentionGameClick(gameName) {
+            const gameIndex = gamesData.findIndex(g => g.name === gameName);
+            if (gameIndex !== -1) {
+                currentIndex = gameIndex;
+                updateCoverflow();
+                toggleChat();
+                showCopyNotification(`Mostrando: ${gameName}`);
+            }
+        }
+
+        async function checkNewChatMessages() {
+            if (!isChatOpen) return;
+            syncMessagesFromServer();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatMessageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            localStorage.setItem('pendingChatMessage', JSON.stringify({
+                message: message,
+                username: chatUsername,
+                userId: chatUserId,
+                timestamp: Date.now()
+            }));
+            
+            const btn = document.getElementById('chatSendBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            
+            input.value = '';
+            
+            try {
+                let url = `${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(message)}`;
+                
+                await fetch(url);
+                
+                localStorage.removeItem('pendingChatMessage');
+                
+                setTimeout(() => syncMessagesFromServer(), 800);
+                
+            } catch (error) {
+                console.error('Error al enviar mensaje:', error);
+                input.value = message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function checkPendingMessage() {
+            const pending = localStorage.getItem('pendingChatMessage');
+            if (pending) {
+                try {
+                    const data = JSON.parse(pending);
+                    if (Date.now() - data.timestamp < 60000) {
+                        const url = `${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(data.userId)}&username=${encodeURIComponent(data.username)}&message=${encodeURIComponent(data.message)}`;
+                        await fetch(url);
+                    }
+                    localStorage.removeItem('pendingChatMessage');
+                } catch (error) {
+                    console.error('Error al enviar mensaje pendiente:', error);
+                    localStorage.removeItem('pendingChatMessage');
+                }
+            }
+        }
+
+        function showGameSuggestions(input) {
+            const cursorPos = input.selectionStart;
+            const textBeforeCursor = input.value.substring(0, cursorPos);
+            const lastHash = textBeforeCursor.lastIndexOf('#');
+            
+            if (lastHash === -1) {
+                hideGameSuggestions();
+                return;
+            }
+            
+            const searchTerm = textBeforeCursor.substring(lastHash + 1).toLowerCase();
+            
+            const matches = gamesData.filter(game => {
+                const gameName = game.name.toLowerCase();
+                const acronym = generateAcronym(game.name).toLowerCase();
+                return gameName.includes(searchTerm) || acronym.includes(searchTerm) || searchTerm === '';
+            }).slice(0, 3);
+            
+            if (matches.length > 0) {
+                displayGameSuggestions(matches, input, lastHash);
+            } else {
+                hideGameSuggestions();
+            }
+        }
+
+        function displayGameSuggestions(games, input, hashPosition) {
+            let suggestionsDiv = document.getElementById('gameSuggestions');
+            
+            if (!suggestionsDiv) {
+                suggestionsDiv = document.createElement('div');
+                suggestionsDiv.id = 'gameSuggestions';
+                suggestionsDiv.style.cssText = `
+                    position: absolute;
+                    bottom: 100%;
+                    left: 0;
+                    right: 0;
+                    background: rgba(0, 0, 0, 0.95);
+                    border: 1px solid rgba(0, 255, 204, 0.5);
+                    border-radius: 10px;
+                    margin-bottom: 5px;
+                    max-height: 150px;
+                    overflow-y: auto;
+                    z-index: 1000;
+                `;
+                input.parentElement.appendChild(suggestionsDiv);
+            }
+            
+            suggestionsDiv.innerHTML = '';
+            
+            games.forEach(game => {
+                const item = document.createElement('div');
+                item.style.cssText = `
+                    padding: 10px;
+                    cursor: pointer;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    transition: background 0.2s;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                `;
+                
+                const acronym = generateAcronym(game.name);
+                
+                item.innerHTML = `
+                    <span style="color: #fff;">${game.name}</span>
+                    <span style="color: #00ffcc; font-weight: 600; font-size: 0.85rem;">#${acronym}</span>
+                `;
+                
+                item.onmouseover = () => item.style.background = 'rgba(0, 255, 204, 0.2)';
+                item.onmouseout = () => item.style.background = 'transparent';
+                
+                item.onclick = () => {
+                    const beforeHash = input.value.substring(0, hashPosition);
+                    const afterCursor = input.value.substring(input.selectionStart);
+                    input.value = beforeHash + '#' + game.name + ' ' + afterCursor;
+                    input.focus();
+                    hideGameSuggestions();
+                };
+                
+                suggestionsDiv.appendChild(item);
+            });
+            
+            suggestionsDiv.style.display = 'block';
+        }
+
+        function hideGameSuggestions() {
+            const suggestionsDiv = document.getElementById('gameSuggestions');
+            if (suggestionsDiv) {
+                suggestionsDiv.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initChatDB();
+            await checkPendingMessage();
+            
+            const chatInput = document.getElementById('chatMessageInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+                
+                chatInput.addEventListener('input', function(e) {
+                    showGameSuggestions(e.target);
+                });
+                
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        hideGameSuggestions();
+                    }
+                });
+            }
+            
+            setInterval(checkNewChatMessages, 3000);
+        });
 
         async function updateVisitorCount() {
             const visitorCountSpan = document.getElementById('visitCount');
