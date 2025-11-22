@@ -186,6 +186,7 @@
             border-radius: 10px;
             margin-bottom: 10px;
             animation: slideIn 0.3s ease;
+            position: relative;
         }
 
         @keyframes slideIn {
@@ -234,12 +235,142 @@
             margin-left: auto;
         }
 
+        .message-reply-btn {
+            background: rgba(0, 255, 204, 0.2);
+            border: 1px solid rgba(0, 255, 204, 0.4);
+            color: #00ffcc;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .message-reply-btn:hover {
+            background: rgba(0, 255, 204, 0.3);
+        }
+
         .message-text {
             color: #ddd;
             line-height: 1.4;
             word-wrap: break-word;
             padding-left: 33px;
             font-size: 0.85rem;
+        }
+
+        .message-url {
+            color: #3b82f6;
+            text-decoration: underline;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .message-url:hover {
+            color: #60a5fa;
+        }
+
+        .message-media-container {
+            margin-top: 8px;
+            padding-left: 33px;
+        }
+
+        .message-image-wrapper {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .message-image {
+            max-width: 100%;
+            max-height: 250px;
+            display: block;
+            border-radius: 10px;
+        }
+
+        .message-video {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 10px;
+        }
+
+        .image-download-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 255, 204, 0.9);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .message-image-wrapper:hover .image-download-btn {
+            opacity: 1;
+        }
+
+        .image-download-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: #000;
+        }
+
+        .message-reply-preview {
+            background: rgba(0, 255, 204, 0.1);
+            border-left: 3px solid #00ffcc;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            margin-left: 33px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+        }
+
+        .reply-preview-author {
+            color: #00ffcc;
+            font-weight: 600;
+        }
+
+        .reply-preview-text {
+            color: #999;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .replying-to-bar {
+            background: rgba(0, 255, 204, 0.1);
+            border-top: 1px solid rgba(0, 255, 204, 0.3);
+            padding: 8px 15px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .replying-to-bar.active {
+            display: flex;
+        }
+
+        .replying-to-text {
+            font-size: 0.75rem;
+            color: #00ffcc;
+        }
+
+        .cancel-reply-btn {
+            background: transparent;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 5px;
         }
 
         .game-mention {
@@ -868,6 +999,11 @@
             <div class="loading-chat">Cargando mensajes...</div>
         </div>
 
+        <div class="replying-to-bar" id="replyingToBar">
+            <div class="replying-to-text" id="replyingToText">Respondiendo a...</div>
+            <button class="cancel-reply-btn" onclick="cancelReply()">✕</button>
+        </div>
+
         <div class="chat-input-section">
             <div class="chat-input-container">
                 <input type="text" id="chatMessageInput" placeholder="Escribe tu mensaje... (#juego)" maxlength="500">
@@ -958,6 +1094,7 @@
         let chatDB;
         let isSyncing = false;
         let displayedMessageIds = new Set();
+        let replyingTo = null;
         
         localStorage.setItem('chatUserId', chatUserId);
 
@@ -1020,7 +1157,8 @@
                     userId: msg.userId,
                     username: msg.username,
                     message: msg.message,
-                    timestamp: msg.timestamp
+                    timestamp: msg.timestamp,
+                    replyTo: msg.replyTo || null
                 });
             });
             
@@ -1045,8 +1183,17 @@
             isChatOpen = !isChatOpen;
             chatContainer.classList.toggle('active');
             if (isChatOpen) {
-                loadChatMessages();
                 loadChatProfile();
+                const container = document.getElementById('chatMessages');
+                const hasMessages = container.children.length > 0 && !container.querySelector('.loading-chat');
+                
+                if (hasMessages) {
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    loadChatMessages();
+                }
+                
+                setTimeout(() => syncMessagesFromServer(), 500);
             }
         }
 
@@ -1067,7 +1214,111 @@
             }
         }
 
-        function createMessageElement(msg) {
+        function isImageUrl(url) {
+            return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url) || 
+                   url.includes('gstatic.com/images') || 
+                   url.includes('rbxcdn.com') ||
+                   url.includes('imgur.com') ||
+                   url.includes('cdn.discordapp.com/attachments');
+        }
+
+        function isVideoUrl(url) {
+            return /\.(mp4|webm|ogg|mov|avi)(\?.*)?$/i.test(url) ||
+                   url.includes('youtube.com/watch') ||
+                   url.includes('youtu.be/') ||
+                   url.includes('vimeo.com/');
+        }
+
+        function extractUrls(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.match(urlRegex) || [];
+        }
+
+        function downloadImage(imageUrl, filename) {
+            fetch(imageUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename || 'imagen.jpg';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(err => {
+                    showCopyNotification('Error al descargar imagen');
+                });
+        }
+
+        function processMessageContent(msg) {
+            let text = msg.message;
+            const urls = extractUrls(text);
+            let mediaHtml = '';
+            
+            urls.forEach(url => {
+                if (isImageUrl(url)) {
+                    const imageName = url.split('/').pop().split('?')[0] || 'imagen.jpg';
+                    mediaHtml += `
+                        <div class="message-media-container">
+                            <div class="message-image-wrapper">
+                                <img class="message-image" src="${url}" alt="Imagen" onerror="this.style.display='none'">
+                                <button class="image-download-btn" onclick="downloadImage('${url}', '${imageName}')" title="Descargar imagen">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    text = text.replace(url, '');
+                } else if (isVideoUrl(url)) {
+                    if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
+                        let videoId = '';
+                        if (url.includes('youtu.be/')) {
+                            videoId = url.split('youtu.be/')[1].split('?')[0];
+                        } else {
+                            videoId = url.split('v=')[1].split('&')[0];
+                        }
+                        mediaHtml += `
+                            <div class="message-media-container">
+                                <iframe class="message-video" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+                            </div>
+                        `;
+                    } else {
+                        mediaHtml += `
+                            <div class="message-media-container">
+                                <video class="message-video" controls>
+                                    <source src="${url}" type="video/mp4">
+                                </video>
+                            </div>
+                        `;
+                    }
+                    text = text.replace(url, '');
+                } else {
+                    text = text.replace(url, `<a class="message-url" href="${url}" target="_blank">${url}</a>`);
+                }
+            });
+
+            text = processMentions(text);
+            
+            return { text: text.trim(), mediaHtml };
+        }
+
+        function setReplyTo(msgData) {
+            replyingTo = msgData;
+            const replyBar = document.getElementById('replyingToBar');
+            const replyText = document.getElementById('replyingToText');
+            replyText.textContent = `Respondiendo a ${msgData.username}: ${msgData.message.substring(0, 30)}...`;
+            replyBar.classList.add('active');
+            document.getElementById('chatMessageInput').focus();
+        }
+
+        function cancelReply() {
+            replyingTo = null;
+            document.getElementById('replyingToBar').classList.remove('active');
+        }
+
+        function createMessageElement(msg, allMessages = []) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'chat-message';
             messageDiv.style.backgroundColor = msg.userId === chatUserId ? 'rgba(0, 255, 204, 0.15)' : getUserColor(msg.userId);
@@ -1080,7 +1331,20 @@
                 minute: '2-digit'
             });
             
-            const processedMessage = processMentions(msg.message);
+            const { text, mediaHtml } = processMessageContent(msg);
+            
+            let replyHtml = '';
+            if (msg.replyTo) {
+                const replyMsg = allMessages.find(m => generateMessageId(m) === msg.replyTo);
+                if (replyMsg) {
+                    replyHtml = `
+                        <div class="message-reply-preview">
+                            <div class="reply-preview-author">${replyMsg.username}</div>
+                            <div class="reply-preview-text">${replyMsg.message.substring(0, 50)}${replyMsg.message.length > 50 ? '...' : ''}</div>
+                        </div>
+                    `;
+                }
+            }
             
             messageDiv.innerHTML = `
                 <div class="message-header">
@@ -1091,14 +1355,17 @@
                     </div>
                     <span class="message-username">${msg.username}</span>
                     <span class="message-time">${time}</span>
+                    <button class="message-reply-btn" onclick='setReplyTo(${JSON.stringify({userId: msg.userId, username: msg.username, message: msg.message, msgId: msgId})})'>↩</button>
                 </div>
-                <div class="message-text">${processedMessage}</div>
+                ${replyHtml}
+                ${text ? `<div class="message-text">${text}</div>` : ''}
+                ${mediaHtml}
             `;
             
             return messageDiv;
         }
 
-        function addMessageToDOM(msg) {
+        function addMessageToDOM(msg, allMessages) {
             const container = document.getElementById('chatMessages');
             const msgId = generateMessageId(msg);
             
@@ -1108,15 +1375,11 @@
             
             const existingMsg = container.querySelector(`[data-msg-id="${msgId}"]`);
             if (existingMsg) {
+                displayedMessageIds.add(msgId);
                 return false;
             }
             
-            const loadingMsg = container.querySelector('.loading-chat');
-            if (loadingMsg) {
-                container.removeChild(loadingMsg);
-            }
-            
-            const messageDiv = createMessageElement(msg);
+            const messageDiv = createMessageElement(msg, allMessages);
             container.appendChild(messageDiv);
             displayedMessageIds.add(msgId);
             return true;
@@ -1125,7 +1388,7 @@
         function displayMessages(messages) {
             if (!messages || messages.length === 0) {
                 const container = document.getElementById('chatMessages');
-                if (container.children.length === 0) {
+                if (container.children.length === 0 || container.querySelector('.loading-chat')) {
                     container.innerHTML = '<div class="loading-chat">No hay mensajes aún. ¡Sé el primero en escribir!</div>';
                 }
                 return;
@@ -1134,8 +1397,13 @@
             const container = document.getElementById('chatMessages');
             const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
             
+            const loadingMsg = container.querySelector('.loading-chat');
+            if (loadingMsg) {
+                container.removeChild(loadingMsg);
+            }
+            
             messages.forEach(msg => {
-                addMessageToDOM(msg);
+                addMessageToDOM(msg, messages);
             });
             
             if (wasAtBottom) {
@@ -1151,7 +1419,9 @@
                 if (cachedMessages.length > 0) {
                     displayMessages(cachedMessages);
                 } else {
-                    container.innerHTML = '<div class="loading-chat">Cargando mensajes...</div>';
+                    if (container.children.length === 0 || container.querySelector('.loading-chat')) {
+                        container.innerHTML = '<div class="loading-chat">Cargando mensajes...</div>';
+                    }
                 }
                 
                 if (!isSyncing) {
@@ -1172,6 +1442,13 @@
                 
                 if (data.messages && data.messages.length > 0) {
                     await saveChatToIndexedDB(data.messages);
+                    
+                    const container = document.getElementById('chatMessages');
+                    const loadingMsg = container.querySelector('.loading-chat');
+                    if (loadingMsg) {
+                        container.removeChild(loadingMsg);
+                    }
+                    
                     displayMessages(data.messages);
                 }
             } catch (error) {
@@ -1205,8 +1482,9 @@
         }
 
         async function checkNewChatMessages() {
-            if (!isChatOpen) return;
-            syncMessagesFromServer();
+            if (!isSyncing) {
+                syncMessagesFromServer();
+            }
         }
 
         async function sendChatMessage() {
@@ -1215,12 +1493,15 @@
             
             if (!message) return;
             
-            localStorage.setItem('pendingChatMessage', JSON.stringify({
+            const messageData = {
                 message: message,
                 username: chatUsername,
                 userId: chatUserId,
-                timestamp: Date.now()
-            }));
+                timestamp: Date.now(),
+                replyTo: replyingTo ? replyingTo.msgId : null
+            };
+            
+            localStorage.setItem('pendingChatMessage', JSON.stringify(messageData));
             
             const btn = document.getElementById('chatSendBtn');
             const originalText = btn.textContent;
@@ -1228,9 +1509,14 @@
             btn.textContent = 'Enviando...';
             
             input.value = '';
+            cancelReply();
             
             try {
                 let url = `${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(message)}`;
+                
+                if (messageData.replyTo) {
+                    url += `&replyTo=${encodeURIComponent(messageData.replyTo)}`;
+                }
                 
                 await fetch(url);
                 
@@ -1253,7 +1539,10 @@
                 try {
                     const data = JSON.parse(pending);
                     if (Date.now() - data.timestamp < 60000) {
-                        const url = `${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(data.userId)}&username=${encodeURIComponent(data.username)}&message=${encodeURIComponent(data.message)}`;
+                        let url = `${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(data.userId)}&username=${encodeURIComponent(data.username)}&message=${encodeURIComponent(data.message)}`;
+                        if (data.replyTo) {
+                            url += `&replyTo=${encodeURIComponent(data.replyTo)}`;
+                        }
                         await fetch(url);
                     }
                     localStorage.removeItem('pendingChatMessage');
@@ -1357,7 +1646,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
-            await initChatDB();
             await checkPendingMessage();
             
             const chatInput = document.getElementById('chatMessageInput');
@@ -1376,6 +1664,7 @@
                 chatInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape') {
                         hideGameSuggestions();
+                        cancelReply();
                     }
                 });
             }
@@ -1885,6 +2174,14 @@
             
             updateVisitorCount();
             setInterval(updateVisitorCount, 30000);
+            
+            initChatDB().then(async () => {
+                const cachedMessages = await loadChatFromIndexedDB();
+                if (cachedMessages.length > 0) {
+                    displayMessages(cachedMessages);
+                }
+                setTimeout(() => syncMessagesFromServer(), 2000);
+            });
         }
 
         window.addEventListener('load', init);
