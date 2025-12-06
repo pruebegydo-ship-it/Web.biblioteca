@@ -4,7 +4,7 @@ const IMGBB_API_URL='https://api.imgbb.com/1/upload';
 
 let chatUserId=localStorage.getItem('chatUserId')||'anon_'+Date.now();
 let chatUsername='Anónimo';
-let isChatOpen=true;
+let isChatOpen=false;
 let chatDB;
 let isSyncing=false;
 let displayedMessageIds=new Set();
@@ -171,8 +171,10 @@ function toggleChat(){
     const chatContainer=document.getElementById('chatContainer');
     const chatBtnText=document.getElementById('chatBtnText');
     isChatOpen=!isChatOpen;
-    chatContainer.classList.toggle('hidden');
+    
     if(isChatOpen){
+        chatContainer.classList.remove('hidden');
+        chatContainer.classList.add('active');
         chatBtnText.textContent='Ocultar Chat';
         loadChatProfile();
         const container=document.getElementById('chatMessages');
@@ -184,6 +186,8 @@ function toggleChat(){
         }
         setTimeout(()=>syncMessagesFromServer(),500)
     }else{
+        chatContainer.classList.remove('active');
+        chatContainer.classList.add('hidden');
         chatBtnText.textContent='Abrir Chat'
     }
 }
@@ -817,4 +821,4 @@ document.addEventListener('DOMContentLoaded',async function(){
         if(cachedMessages.length>0){await displayMessages(cachedMessages)}
         setTimeout(()=>syncMessagesFromServer(),1000)
     })
-}); 
+});
