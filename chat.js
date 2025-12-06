@@ -1,9 +1,10 @@
-const CHAT_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwMRncb4s858zQYSlkUqVD4XmMi9pjFraC7toEha1Dd-INn0V0OcWiv7ivD4gjOTT3rFA/exec';
+const WORKER_URL='https://jolly-bush-a809.armijosfeo.workers.dev';
+const GOOGLE_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwMRncb4s858zQYSlkUqVD4XmMi9pjFraC7toEha1Dd-INn0V0OcWiv7ivD4gjOTT3rFA/exec';
 const IMGBB_API_KEY='dcd38e938cece07962c8f5a37df2f131';
 const IMGBB_API_URL='https://api.imgbb.com/1/upload';
 
-let chatUserId=localStorage.getItem('chatUserId')||'anon_'+Date.now();
-let chatUsername='Anónimo';
+let chatUserId=localStorage.getItem('chatUserId')||'user_'+Date.now()+'_'+Math.random().toString(36).substr(2,9);
+let chatUsername=localStorage.getItem('chatUsername')||'Anónimo';
 let isChatOpen=false;
 let chatDB;
 let isSyncing=false;
@@ -22,7 +23,6 @@ function generateMessageId(msg){return msg.messageId||`msg_${msg.userId}_${msg.t
 function editMessage(msgId){
     const msg=allMessagesCache.find(m=>generateMessageId(m)===msgId);
     if(!msg||msg.userId!==chatUserId)return;
-    
     editingMessageId=msgId;
     const input=document.getElementById('chatMessageInput');
     const sendBtn=document.getElementById('chatSendBtn');
@@ -34,13 +34,10 @@ function editMessage(msgId){
 function deleteMessage(msgId){
     const msg=allMessagesCache.find(m=>generateMessageId(m)===msgId);
     if(!msg||msg.userId!==chatUserId)return;
-    
     if(!confirm('¿Eliminar este mensaje?'))return;
-    
     const btn=document.querySelector(`[data-msg-id="${msgId}"] .msg-action-btn[onclick*="deleteMessage"]`);
     if(btn)btn.textContent='⏳';
-    
-    fetch(`${CHAT_SCRIPT_URL}?action=deleteMessage&userId=${encodeURIComponent(chatUserId)}&messageId=${encodeURIComponent(msgId)}`)
+    fetch(`${WORKER_URL}?action=deleteMessage&userId=${encodeURIComponent(chatUserId)}&messageId=${encodeURIComponent(msgId)}`)
         .then(res=>res.json())
         .then(data=>{
             if(data.deleted||data.success){
@@ -51,16 +48,19 @@ function deleteMessage(msgId){
                     setTimeout(()=>{
                         msgElement.remove();
                         displayedMessageIds.delete(msgId);
-                        allMessagesCache=allMessagesCache.filter(m=>generateMessageId(m)!==msgId)
+                        allMessagesCache=allMessagesCache.filter(m=>generateMessageId(m)!==msgId);
+                        syncMessagesFromServer()
                     },300)
                 }
             }else{
-                alert('Error al eliminar mensaje')
+                if(btn)btn.textContent='🗑️';
+                alert('Error al eliminar')
             }
         })
         .catch(err=>{
-            console.error('Error al eliminar:',err);
-            alert('Error al eliminar mensaje')
+            console.error('Error:',err);
+            if(btn)btn.textContent='🗑️';
+            alert('Error al eliminar')
         })
 }
 
@@ -80,11 +80,10 @@ function getUserColor(userId){
 function openVideoModal(type,url,videoId){
     const modal=document.getElementById('videoModal');
     const content=document.getElementById('videoModalContent');
-    
     if(type==='youtube'){
         content.innerHTML=`<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(currentVideoTime)}" allowfullscreen allow="autoplay"></iframe>`
     }else if(type==='tiktok'||type==='discord'){
-        content.innerHTML=`<video controls autoplay id="modalVideo"><source src="${url}" type="video/mp4">Tu navegador no soporta video.</video>`;
+        content.innerHTML=`<video controls autoplay id="modalVideo"><source src="${url}" type="video/mp4"></video>`;
         setTimeout(()=>{
             const vid=document.getElementById('modalVideo');
             if(vid&&currentVideoTime>0){vid.currentTime=currentVideoTime}
@@ -92,7 +91,7 @@ function openVideoModal(type,url,videoId){
     }else if(type==='embed'){
         content.innerHTML=`<iframe src="${url}" allowfullscreen allow="autoplay"></iframe>`
     }else if(type==='direct'){
-        content.innerHTML=`<video controls autoplay id="modalVideo"><source src="${url}" type="video/mp4">Tu navegador no soporta video.</video>`;
+        content.innerHTML=`<video controls autoplay id="modalVideo"><source src="${url}" type="video/mp4"></video>`;
         setTimeout(()=>{
             const vid=document.getElementById('modalVideo');
             if(vid&&currentVideoTime>0){vid.currentTime=currentVideoTime}
@@ -169,13 +168,10 @@ async function loadChatFromIndexedDB(){
 
 function toggleChat(){
     const chatContainer=document.getElementById('chatContainer');
-    const chatBtnText=document.getElementById('chatBtnText');
     isChatOpen=!isChatOpen;
-    
     if(isChatOpen){
         chatContainer.classList.remove('hidden');
         chatContainer.classList.add('active');
-        chatBtnText.textContent='Ocultar Chat';
         loadChatProfile();
         const container=document.getElementById('chatMessages');
         const hasMessages=container.children.length>0&&!container.querySelector('.loading-chat');
@@ -187,8 +183,7 @@ function toggleChat(){
         syncMessagesFromServer()
     }else{
         chatContainer.classList.remove('active');
-        chatContainer.classList.add('hidden');
-        chatBtnText.textContent='Abrir Chat'
+        chatContainer.classList.add('hidden')
     }
 }
 
@@ -221,11 +216,7 @@ function isVideoUrl(url){
            url.includes('youtube.com/watch')||
            url.includes('youtu.be/')||
            url.includes('tiktok.com')||
-           (url.includes('cdn.discordapp.com')&&url.match(/\.(mp4|webm|mov)/i))||
-           url.includes('pornhub.com/view_video')||
-           url.includes('facebook.com')||
-           url.includes('fb.watch')||
-           url.includes('instagram.com')
+           (url.includes('cdn.discordapp.com')&&url.match(/\.(mp4|webm|mov)/i))
 }
 
 async function getTikTokVideo(url){
@@ -238,16 +229,11 @@ async function getTikTokVideo(url){
         }
         return{success:false,originalUrl:url}
     }catch(error){
-        console.error('Error TikTok API:',error);
         return{success:false,originalUrl:url}
     }
 }
 
 async function getVideoEmbedInfo(url){
-    if(url.includes('pornhub.com/view_video')){
-        const match=url.match(/viewkey=([a-z0-9]+)/i);
-        if(match)return{type:'pornhub',id:match[1],embed:`https://www.pornhub.com/embed/${match[1]}`,thumb:null,platform:'PornHub'}
-    }
     if(url.includes('youtube.com/watch')||url.includes('youtu.be/')){
         let videoId='';
         if(url.includes('youtu.be/')){videoId=url.split('youtu.be/')[1].split('?')[0]}
@@ -263,24 +249,7 @@ async function getVideoEmbedInfo(url){
             return{type:'tiktok',videoId:videoId,platform:'TikTok',originalUrl:url,useApi:false,embedUrl:`https://www.tiktok.com/embed/v2/${videoId}`}
         }
     }
-    if(url.includes('instagram.com/p/')||url.includes('instagram.com/reel/')){
-        let postId='';
-        if(url.includes('/p/')){postId=url.split('/p/')[1].split('/')[0]}
-        else if(url.includes('/reel/')){postId=url.split('/reel/')[1].split('/')[0]}
-        return{type:'instagram',url:url,postId:postId,embed:`https://www.instagram.com/p/${postId}/embed`,platform:'Instagram'}
-    }
-    if(url.includes('facebook.com')||url.includes('fb.watch')){
-        const encodedUrl=encodeURIComponent(url);
-        return{type:'facebook',url:url,embed:`https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&width=560`,platform:'Facebook'}
-    }
     return null
-}
-
-function openSocialModal(url,platform){
-    const modal=document.getElementById('videoModal');
-    const content=document.getElementById('videoModalContent');
-    content.innerHTML=`<iframe src="${url}" allowfullscreen allow="autoplay"></iframe>`;
-    modal.classList.add('active')
 }
 
 function toggleVideoControls(el){
@@ -347,7 +316,6 @@ async function processMessageContent(msg){
             processedUrls.push(url)
         }else if(isVideoUrl(url)){
             const videoInfo=await getVideoEmbedInfo(url);
-            
             if(videoInfo&&videoInfo.type==='youtube'){
                 mediaHtml+=`<div class="message-media-container"><div class="video-thumb-container youtube" onclick="toggleVideoControls(this)"><iframe src="${videoInfo.embed}" allowfullscreen></iframe><button class="video-maximize-btn" onclick="event.stopPropagation();openVideoModal('youtube','${url}','${videoInfo.id}')" title="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button><span class="video-label">${videoInfo.platform}</span></div></div>`;
                 text=text.replace(url,'');
@@ -359,18 +327,6 @@ async function processMessageContent(msg){
                 }else{
                     mediaHtml+=`<div class="message-media-container"><div class="video-thumb-container tiktok" onclick="toggleVideoControls(this)"><iframe src="${videoInfo.embedUrl}" allowfullscreen scrolling="no" style="border:none;"></iframe><button class="video-maximize-btn" onclick="event.stopPropagation();openVideoModal('embed','${videoInfo.embedUrl}','')" title="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button><span class="video-label">${videoInfo.platform} (Embed)</span></div></div>`
                 }
-                text=text.replace(url,'');
-                processedUrls.push(url)
-            }else if(videoInfo&&videoInfo.type==='pornhub'){
-                mediaHtml+=`<div class="message-media-container"><div class="video-thumb-container" onclick="toggleVideoControls(this)"><iframe src="${videoInfo.embed}" allowfullscreen></iframe><button class="video-maximize-btn" onclick="event.stopPropagation();openVideoModal('embed','${videoInfo.embed}','')" title="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button><span class="video-label">${videoInfo.platform}</span></div></div>`;
-                text=text.replace(url,'');
-                processedUrls.push(url)
-            }else if(videoInfo&&videoInfo.type==='instagram'){
-                mediaHtml+=`<div class="message-media-container"><div class="video-thumb-container instagram" onclick="openSocialModal('${videoInfo.embed}','${videoInfo.platform}')"><iframe src="${videoInfo.embed}" allowfullscreen scrolling="no" style="pointer-events:none;"></iframe><div class="video-play-center"><svg viewBox="0 0 24 24"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h4v-2H5V8h14v10h-4v2h4c1.1 0 2-.9 2-2V6c0-1.1-.89-2-2-2zm-7 6l-4 4h3v6h2v-6h3l-4-4z"/></svg></div><span class="video-label">${videoInfo.platform}</span></div></div>`;
-                text=text.replace(url,'');
-                processedUrls.push(url)
-            }else if(videoInfo&&videoInfo.type==='facebook'){
-                mediaHtml+=`<div class="message-media-container"><div class="video-thumb-container facebook" onclick="toggleVideoControls(this)"><iframe src="${videoInfo.embed}" allowfullscreen scrolling="no" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe><button class="video-maximize-btn" onclick="event.stopPropagation();openVideoModal('embed','${videoInfo.embed}','')" title="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button><span class="video-label">${videoInfo.platform}</span></div></div>`;
                 text=text.replace(url,'');
                 processedUrls.push(url)
             }else if(url.includes('cdn.discordapp.com')&&url.match(/\.(mp4|webm|mov)/i)){
@@ -423,10 +379,6 @@ function mentionGameClick(gameName){
     }
 }
 
-function processUserMentions(text){
-    return text
-}
-
 async function createMessageElement(msg){
     const messageDiv=document.createElement('div');
     messageDiv.className='chat-message';
@@ -448,7 +400,7 @@ async function createMessageElement(msg){
     return messageDiv
 }
 
-async function addMessageToDOM(msg,allMessages){
+async function addMessageToDOM(msg){
     const container=document.getElementById('chatMessages');
     const msgId=generateMessageId(msg);
     
@@ -504,7 +456,7 @@ async function displayMessages(messages){
     allMessagesCache=messages;
     
     for(const msg of messages){
-        await addMessageToDOM(msg,messages)
+        await addMessageToDOM(msg)
     }
     
     if(wasAtBottom){container.scrollTop=container.scrollHeight}
@@ -525,7 +477,7 @@ async function loadChatMessages(){
         
         if(!isSyncing){syncMessagesFromServer()}
     }catch(error){
-        console.error('Error al cargar mensajes del chat:',error)
+        console.error('Error:',error)
     }
 }
 
@@ -533,7 +485,10 @@ async function syncMessagesFromServer(){
     if(isSyncing)return;
     isSyncing=true;
     try{
-        const response=await fetch(`${CHAT_SCRIPT_URL}?action=getMessages`);
+        const response=await fetch(`${WORKER_URL}?action=getMessages&t=${Date.now()}`,{
+            method:'GET',
+            cache:'no-store'
+        });
         const data=await response.json();
         
         if(data.cleared){
@@ -541,7 +496,7 @@ async function syncMessagesFromServer(){
             allMessagesCache=[];
             lastTimestamp=0;
             const container=document.getElementById('chatMessages');
-            container.innerHTML='<div class="loading-chat">💬 Chat limpiado completamente</div>';
+            container.innerHTML='<div class="loading-chat">💬 Chat limpiado</div>';
             await saveChatToIndexedDB([]);
             setTimeout(()=>{
                 container.innerHTML='<div class="loading-chat">No hay mensajes aún. ¡Sé el primero en escribir!</div>'
@@ -563,6 +518,27 @@ async function syncMessagesFromServer(){
                 return
             }
             
+            const serverMessageIds=new Set(data.messages.map(m=>generateMessageId(m)));
+            const localMessageIds=Array.from(displayedMessageIds);
+            
+            localMessageIds.forEach(localId=>{
+                if(!serverMessageIds.has(localId)){
+                    const msgElement=document.querySelector(`[data-msg-id="${localId}"]`);
+                    if(msgElement){
+                        msgElement.style.opacity='0';
+                        msgElement.style.transform='scale(0.8)';
+                        setTimeout(()=>{
+                            msgElement.remove();
+                            displayedMessageIds.delete(localId)
+                        },300)
+                    }else{
+                        displayedMessageIds.delete(localId)
+                    }
+                }
+            });
+            
+            allMessagesCache=allMessagesCache.filter(m=>serverMessageIds.has(generateMessageId(m)));
+            
             await saveChatToIndexedDB(data.messages);
             const container=document.getElementById('chatMessages');
             const loadingMsg=container.querySelector('.loading-chat');
@@ -573,7 +549,7 @@ async function syncMessagesFromServer(){
             }
         }
     }catch(error){
-        console.error('Error al sincronizar mensajes:',error)
+        console.error('Error:',error)
     }finally{
         isSyncing=false
     }
@@ -641,48 +617,35 @@ async function sendChatMessage(){
     if(!message)return;
     
     const btn=document.getElementById('chatSendBtn');
-    const originalText=btn.textContent;
-    btn.disabled=true;
-    btn.textContent='Enviando...';
     
     document.getElementById('suggestionsPopup').classList.remove('active');
     
-    try{
-        if(editingMessageId){
-            await fetch(`${CHAT_SCRIPT_URL}?action=editMessage&userId=${encodeURIComponent(chatUserId)}&messageId=${encodeURIComponent(editingMessageId)}&newMessage=${encodeURIComponent(message)}`);
-            editingMessageId=null;
-            btn.textContent='Enviar'
-        }else{
-            const timestamp=Date.now();
-            const url=`${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(message)}&timestamp=${timestamp}`;
-            await fetch(url)
-        }
-        
-        input.value='';
-        setTimeout(()=>syncMessagesFromServer(),500)
-    }catch(error){
-        console.error('Error al enviar mensaje:',error);
-        input.value=message
-    }finally{
-        btn.disabled=false;
-        if(btn.textContent!=='Enviar')btn.textContent=originalText
-    }
-}
-
-async function checkPendingMessage(){
-    const pending=localStorage.getItem('pendingChatMessage');
-    if(pending){
-        try{
-            const data=JSON.parse(pending);
-            if(Date.now()-data.timestamp<60000){
-                const url=`${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(data.userId)}&username=${encodeURIComponent(data.username)}&message=${encodeURIComponent(data.message)}&timestamp=${data.timestamp}`;
-                await fetch(url)
-            }
-            localStorage.removeItem('pendingChatMessage')
-        }catch(error){
-            console.error('Error al enviar mensaje pendiente:',error);
-            localStorage.removeItem('pendingChatMessage')
-        }
+    const messageToSend=message;
+    input.value='';
+    input.focus();
+    
+    const timestamp=Date.now();
+    
+    if(editingMessageId){
+        const msgId=editingMessageId;
+        editingMessageId=null;
+        btn.textContent='Enviar';
+        fetch(`${WORKER_URL}?action=editMessage&userId=${encodeURIComponent(chatUserId)}&messageId=${encodeURIComponent(msgId)}&newMessage=${encodeURIComponent(messageToSend)}`)
+            .then(res=>res.json())
+            .then(data=>{
+                if(data.success||data.edited){
+                    setTimeout(()=>syncMessagesFromServer(),500)
+                }else{
+                    showCopyNotification('❌ Error al editar')
+                }
+            })
+            .catch(e=>{
+                console.error(e);
+                showCopyNotification('❌ Error al editar')
+            })
+    }else{
+        const url=`${WORKER_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(messageToSend)}&timestamp=${timestamp}`;
+        fetch(url).catch(e=>console.error(e))
     }
 }
 
@@ -691,63 +654,41 @@ function openFileInput(){document.getElementById('imageInput').click()}
 async function uploadImageToImgBB(file){
     const uploadBtn=document.getElementById('uploadImageBtn');
     const originalHTML=uploadBtn.innerHTML;
-    uploadBtn.disabled=true;
     uploadBtn.innerHTML='<span>⏳</span>';
     
-    try{
-        const reader=new FileReader();
-        reader.onload=async(e)=>{
-            const base64Image=e.target.result.split(',')[1];
-            const formData=new FormData();
-            formData.append('key',IMGBB_API_KEY);
-            formData.append('image',base64Image);
-            
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+        const base64Image=e.target.result.split(',')[1];
+        const formData=new FormData();
+        formData.append('key',IMGBB_API_KEY);
+        formData.append('image',base64Image);
+        
+        try{
             const response=await fetch(IMGBB_API_URL,{method:'POST',body:formData});
             const data=await response.json();
             
             if(data.success){
                 const imageUrl=data.data.url;
-                const messageData={
-                    message:imageUrl,
-                    username:chatUsername,
-                    userId:chatUserId,
-                    timestamp:Date.now()
-                };
-                
-                localStorage.setItem('pendingChatMessage',JSON.stringify(messageData));
-                
-                try{
-                    const url=`${CHAT_SCRIPT_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(imageUrl)}&timestamp=${messageData.timestamp}`;
-                    
-                    await fetch(url);
-                    localStorage.removeItem('pendingChatMessage');
-                    setTimeout(()=>syncMessagesFromServer(),500);
-                    showCopyNotification('✨ Imagen enviada!')
-                }catch(error){
-                    console.error('Error al enviar mensaje:',error);
-                    showCopyNotification('❌ Error al enviar la imagen')
-                }
+                const timestamp=Date.now();
+                const url=`${WORKER_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(imageUrl)}&timestamp=${timestamp}`;
+                fetch(url).catch(e=>console.error(e));
+                showCopyNotification('✨ Imagen enviada!')
             }else{
-                showCopyNotification('❌ Error al subir la imagen')
+                showCopyNotification('❌ Error al subir')
             }
-            
-            uploadBtn.disabled=false;
-            uploadBtn.innerHTML=originalHTML
-        };
+        }catch(error){
+            showCopyNotification('❌ Error')
+        }
         
-        reader.onerror=()=>{
-            showCopyNotification('❌ Error al leer la imagen');
-            uploadBtn.disabled=false;
-            uploadBtn.innerHTML=originalHTML
-        };
-        
-        reader.readAsDataURL(file)
-    }catch(error){
-        console.error('Error al subir imagen:',error);
-        showCopyNotification('❌ Error al subir la imagen');
-        uploadBtn.disabled=false;
         uploadBtn.innerHTML=originalHTML
-    }
+    };
+    
+    reader.onerror=()=>{
+        showCopyNotification('❌ Error al leer');
+        uploadBtn.innerHTML=originalHTML
+    };
+    
+    reader.readAsDataURL(file)
 }
 
 document.addEventListener('DOMContentLoaded',async function(){
@@ -775,7 +716,7 @@ document.addEventListener('DOMContentLoaded',async function(){
             if(file&&file.type.startsWith('image/')){
                 uploadImageToImgBB(file)
             }else{
-                showCopyNotification('⚠️ Por favor selecciona una imagen válida')
+                showCopyNotification('⚠️ Selecciona una imagen válida')
             }
             e.target.value=''
         })
