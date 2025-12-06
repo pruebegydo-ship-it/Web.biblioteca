@@ -184,7 +184,7 @@ function toggleChat(){
         }else{
             loadChatMessages()
         }
-        setTimeout(()=>syncMessagesFromServer(),500)
+        syncMessagesFromServer()
     }else{
         chatContainer.classList.remove('active');
         chatContainer.classList.add('hidden');
@@ -394,23 +394,37 @@ async function processMessageContent(msg){
     });
     
     text=processMentions(text);
-    text=processUserMentions(text);
     return{text:text.trim(),mediaHtml}
 }
 
-function processUserMentions(text){
-    let processed=text;
-    registeredUsers.forEach((userData,key)=>{
-        const regex=new RegExp('@'+userData.username.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-        processed=processed.replace(regex,`<span class="user-mention" onclick="mentionUserClick('${userData.username}')">@${userData.username}</span>`)
-    });
+function processMentions(message){
+    let processed=message;
+    if(typeof gamesData!=='undefined'){
+        gamesData.forEach(game=>{
+            const gameAcronym=generateAcronym(game.name);
+            const regexName=new RegExp('#'+game.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+            const regexAcronym=new RegExp('#'+gameAcronym.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+            processed=processed.replace(regexName,`<span class="game-mention" onclick="mentionGameClick('${game.name}')">#${game.name}</span>`);
+            processed=processed.replace(regexAcronym,`<span class="game-mention" onclick="mentionGameClick('${game.name}')">#${gameAcronym}</span>`)
+        })
+    }
     return processed
 }
 
-function mentionUserClick(username){
-    const input=document.getElementById('chatMessageInput');
-    input.value+=` @${username} `;
-    input.focus()
+function mentionGameClick(gameName){
+    if(typeof currentIndex!=='undefined'&&typeof gamesData!=='undefined'){
+        const gameIndex=gamesData.findIndex(g=>g.name===gameName);
+        if(gameIndex!==-1){
+            currentIndex=gameIndex;
+            if(typeof updateCoverflow==='function'){updateCoverflow()}
+            if(isChatOpen){toggleChat()}
+            showCopyNotification(`Mostrando: ${gameName}`)
+        }
+    }
+}
+
+function processUserMentions(text){
+    return text
 }
 
 async function createMessageElement(msg){
@@ -565,32 +579,6 @@ async function syncMessagesFromServer(){
     }
 }
 
-function processMentions(message){
-    let processed=message;
-    if(typeof gamesData!=='undefined'){
-        gamesData.forEach(game=>{
-            const gameAcronym=generateAcronym(game.name);
-            const regexName=new RegExp('#'+game.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-            const regexAcronym=new RegExp('#'+gameAcronym.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-            processed=processed.replace(regexName,`<span class="game-mention" onclick="mentionGameClick('${game.name}')">#${game.name}</span>`);
-            processed=processed.replace(regexAcronym,`<span class="game-mention" onclick="mentionGameClick('${game.name}')">#${gameAcronym}</span>`)
-        })
-    }
-    return processed
-}
-
-function mentionGameClick(gameName){
-    if(typeof currentIndex!=='undefined'&&typeof gamesData!=='undefined'){
-        const gameIndex=gamesData.findIndex(g=>g.name===gameName);
-        if(gameIndex!==-1){
-            currentIndex=gameIndex;
-            if(typeof updateCoverflow==='function'){updateCoverflow()}
-            if(isChatOpen){toggleChat()}
-            showCopyNotification(`Mostrando: ${gameName}`)
-        }
-    }
-}
-
 async function checkNewChatMessages(){
     if(!isSyncing){syncMessagesFromServer()}
 }
@@ -619,17 +607,6 @@ function showSuggestionsPopup(type,items){
                 popup.classList.remove('active');
                 input.focus()
             }
-        }else if(type==='user'){
-            div.innerHTML=`<div class="suggestion-icon user"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div><div class="suggestion-info"><div class="suggestion-name">${item.username}</div><div class="suggestion-type">Usuario</div></div>`;
-            div.onclick=()=>{
-                const input=document.getElementById('chatMessageInput');
-                const cursorPos=input.selectionStart;
-                const textBefore=input.value.substring(0,cursorPos);
-                const lastAt=textBefore.lastIndexOf('@');
-                input.value=textBefore.substring(0,lastAt)+'@'+item.username+' '+input.value.substring(cursorPos);
-                popup.classList.remove('active');
-                input.focus()
-            }
         }
         
         popup.appendChild(div)
@@ -643,10 +620,9 @@ function handleChatInput(e){
     const cursorPos=input.selectionStart;
     const textBefore=input.value.substring(0,cursorPos);
     const lastHash=textBefore.lastIndexOf('#');
-    const lastAt=textBefore.lastIndexOf('@');
     const lastSpace=Math.max(textBefore.lastIndexOf(' '),textBefore.lastIndexOf('\n'));
     
-    if(lastHash>lastSpace&&lastHash>lastAt&&typeof gamesData!=='undefined'){
+    if(lastHash>lastSpace&&typeof gamesData!=='undefined'){
         const searchTerm=textBefore.substring(lastHash+1).toLowerCase();
         const matches=gamesData.filter(game=>{
             const name=game.name.toLowerCase();
@@ -654,15 +630,6 @@ function handleChatInput(e){
             return name.includes(searchTerm)||acronym.includes(searchTerm)||searchTerm===''
         }).map(game=>({name:game.name,acronym:generateAcronym(game.name)}));
         showSuggestionsPopup('game',matches.slice(0,3))
-    }else if(lastAt>lastSpace&&lastAt>lastHash){
-        const searchTerm=textBefore.substring(lastAt+1).toLowerCase();
-        const matches=[];
-        registeredUsers.forEach((userData,key)=>{
-            if(userData.username.toLowerCase().includes(searchTerm)||searchTerm===''){
-                matches.push(userData)
-            }
-        });
-        showSuggestionsPopup('user',matches.slice(0,5))
     }else{
         document.getElementById('suggestionsPopup').classList.remove('active')
     }
@@ -814,11 +781,11 @@ document.addEventListener('DOMContentLoaded',async function(){
         })
     }
     
-    setInterval(checkNewChatMessages,2000);
+    setInterval(checkNewChatMessages,1000);
     
     await initChatDB().then(async()=>{
         const cachedMessages=await loadChatFromIndexedDB();
         if(cachedMessages.length>0){await displayMessages(cachedMessages)}
-        setTimeout(()=>syncMessagesFromServer(),1000)
+        syncMessagesFromServer()
     })
 });
