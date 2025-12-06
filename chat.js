@@ -15,6 +15,9 @@ let currentPlayingVideo=null;
 let currentVideoTime=0;
 let lastTimestamp=0;
 let editingMessageId=null;
+let eventSource=null;
+let pollInterval=null;
+let lastMessageCount=0;
 
 localStorage.setItem('chatUserId',chatUserId);
 
@@ -173,17 +176,13 @@ function toggleChat(){
         chatContainer.classList.remove('hidden');
         chatContainer.classList.add('active');
         loadChatProfile();
-        const container=document.getElementById('chatMessages');
-        const hasMessages=container.children.length>0&&!container.querySelector('.loading-chat');
-        if(hasMessages){
-            container.scrollTop=container.scrollHeight
-        }else{
-            loadChatMessages()
-        }
-        syncMessagesFromServer()
+        loadChatMessages();
+        initSSE();
+        startPolling()
     }else{
         chatContainer.classList.remove('active');
-        chatContainer.classList.add('hidden')
+        chatContainer.classList.add('hidden');
+        stopSSE()
     }
 }
 
@@ -465,19 +464,22 @@ async function displayMessages(messages){
 async function loadChatMessages(){
     try{
         const container=document.getElementById('chatMessages');
+        
+        container.innerHTML='<div class="loading-chat">Cargando mensajes...</div>';
+        
         const cachedMessages=await loadChatFromIndexedDB();
         
         if(cachedMessages.length>0){
             await displayMessages(cachedMessages)
-        }else{
-            if(container.children.length===0||container.querySelector('.loading-chat')){
-                container.innerHTML='<div class="loading-chat">Cargando mensajes...</div>'
-            }
         }
         
-        if(!isSyncing){syncMessagesFromServer()}
+        await syncMessagesFromServer()
+        
     }catch(error){
-        console.error('Error:',error)
+        console.error('Error:',error);
+        const container=document.getElementById('chatMessages');
+        container.innerHTML='<div class="loading-chat">Error al cargar. Reintentando...</div>';
+        setTimeout(loadChatMessages,2000)
     }
 }
 
@@ -495,6 +497,7 @@ async function syncMessagesFromServer(){
             displayedMessageIds.clear();
             allMessagesCache=[];
             lastTimestamp=0;
+            lastMessageCount=0;
             const container=document.getElementById('chatMessages');
             container.innerHTML='<div class="loading-chat">💬 Chat limpiado</div>';
             await saveChatToIndexedDB([]);
@@ -509,6 +512,7 @@ async function syncMessagesFromServer(){
                 displayedMessageIds.clear();
                 allMessagesCache=[];
                 lastTimestamp=0;
+                lastMessageCount=0;
                 const container=document.getElementById('chatMessages');
                 container.innerHTML='<div class="loading-chat">💬 Chat limpiado</div>';
                 await saveChatToIndexedDB([]);
@@ -544,6 +548,9 @@ async function syncMessagesFromServer(){
             const loadingMsg=container.querySelector('.loading-chat');
             if(loadingMsg){container.removeChild(loadingMsg)}
             await displayMessages(data.messages);
+            
+            lastMessageCount=data.messages.length;
+            
             if(data.messages.length>0){
                 lastTimestamp=Math.max(...data.messages.map(m=>m.timestamp))
             }
@@ -557,6 +564,68 @@ async function syncMessagesFromServer(){
 
 async function checkNewChatMessages(){
     if(!isSyncing){syncMessagesFromServer()}
+}
+
+function initSSE(){
+    if(eventSource){
+        eventSource.close()
+    }
+    
+    console.log('🔄 Iniciando conexión en tiempo real...');
+    
+    eventSource=new EventSource(`${WORKER_URL}?action=stream`);
+    
+    eventSource.onopen=()=>{
+        console.log('🟢 SSE conectado')
+    };
+    
+    eventSource.onmessage=(event)=>{
+        try{
+            const data=JSON.parse(event.data);
+            if(data.type==='update'){
+                console.log('📨 Actualización SSE');
+                syncMessagesFromServer()
+            }
+        }catch(e){}
+    };
+    
+    eventSource.onerror=(error)=>{
+        console.log('🔴 SSE desconectado, usando polling');
+        eventSource.close();
+        startPolling();
+        setTimeout(()=>{
+            if(isChatOpen){
+                stopPolling();
+                initSSE()
+            }
+        },10000)
+    }
+}
+
+function startPolling(){
+    if(pollInterval)return;
+    console.log('🔄 Polling activado (cada 3s)');
+    pollInterval=setInterval(()=>{
+        if(isChatOpen){
+            syncMessagesFromServer()
+        }
+    },3000)
+}
+
+function stopPolling(){
+    if(pollInterval){
+        clearInterval(pollInterval);
+        pollInterval=null;
+        console.log('⏹️ Polling detenido')
+    }
+}
+
+function stopSSE(){
+    if(eventSource){
+        eventSource.close();
+        eventSource=null
+    }
+    stopPolling()
 }
 
 function showSuggestionsPopup(type,items){
@@ -644,8 +713,27 @@ async function sendChatMessage(){
                 showCopyNotification('❌ Error al editar')
             })
     }else{
+        const tempMsg={
+            userId:chatUserId,
+            username:chatUsername,
+            message:messageToSend,
+            timestamp:timestamp,
+            messageId:`msg_${chatUserId}_${timestamp}`
+        };
+        
+        await addMessageToDOM(tempMsg);
+        const container=document.getElementById('chatMessages');
+        container.scrollTop=container.scrollHeight;
+        
         const url=`${WORKER_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(messageToSend)}&timestamp=${timestamp}`;
-        fetch(url).catch(e=>console.error(e))
+        fetch(url)
+            .then(res=>res.json())
+            .then(data=>{
+                if(!data.success){
+                    showCopyNotification('⚠️ Mensaje enviado pero no guardado')
+                }
+            })
+            .catch(e=>console.error(e))
     }
 }
 
@@ -670,6 +758,19 @@ async function uploadImageToImgBB(file){
             if(data.success){
                 const imageUrl=data.data.url;
                 const timestamp=Date.now();
+                
+                const tempMsg={
+                    userId:chatUserId,
+                    username:chatUsername,
+                    message:imageUrl,
+                    timestamp:timestamp,
+                    messageId:`msg_${chatUserId}_${timestamp}`
+                };
+                
+                await addMessageToDOM(tempMsg);
+                const container=document.getElementById('chatMessages');
+                container.scrollTop=container.scrollHeight;
+                
                 const url=`${WORKER_URL}?action=sendMessage&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&message=${encodeURIComponent(imageUrl)}&timestamp=${timestamp}`;
                 fetch(url).catch(e=>console.error(e));
                 showCopyNotification('✨ Imagen enviada!')
@@ -722,11 +823,16 @@ document.addEventListener('DOMContentLoaded',async function(){
         })
     }
     
-    setInterval(checkNewChatMessages,1000);
+    await initChatDB();
     
-    await initChatDB().then(async()=>{
-        const cachedMessages=await loadChatFromIndexedDB();
-        if(cachedMessages.length>0){await displayMessages(cachedMessages)}
-        syncMessagesFromServer()
-    })
+    document.addEventListener('visibilitychange',()=>{
+        if(document.hidden){
+            stopSSE()
+        }else if(isChatOpen){
+            initSSE();
+            startPolling()
+        }
+    });
+    
+    console.log('✅ Chat inicializado - Sistema híbrido SSE + Polling')
 });
