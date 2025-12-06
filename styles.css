@@ -7,13 +7,27 @@ body::before{content:'';position:fixed;top:0;left:0;width:100vw;height:100vh;bac
 .discord-btn:hover{transform:scale(1.1);box-shadow:0 6px 25px rgba(88,101,242,0.5);border-color:rgba(255,255,255,0.4)}
 .discord-btn svg{width:32px;height:32px;fill:white}
 
-.chat-btn{position:fixed;bottom:30px;right:30px;min-width:60px;height:60px;background:linear-gradient(45deg,#00ffcc,#00d4aa);border-radius:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1000;box-shadow:0 4px 15px rgba(0,255,204,0.4);transition:all 0.3s ease;border:2px solid rgba(255,255,255,0.2);padding:0 20px;gap:8px}
-.chat-btn:hover{transform:scale(1.05);box-shadow:0 6px 25px rgba(0,255,204,0.6);border-color:rgba(255,255,255,0.4)}
-.chat-btn svg{width:32px;height:32px;fill:white;flex-shrink:0}
+.chat-btn{position:fixed;bottom:30px;right:30px;min-width:60px;height:60px;background:linear-gradient(45deg,#00ffcc,#00d4aa,#00ffcc);background-size:200% 200%;border-radius:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1000;box-shadow:0 0 25px rgba(0,255,204,0.5),0 0 50px rgba(0,255,204,0.3),0 4px 15px rgba(0,255,204,0.4);transition:all 0.3s ease;border:2px solid rgba(255,255,255,0.3);padding:0 20px;gap:8px;animation:pulseChat 3s ease-in-out infinite,gradientShift 4s ease infinite;overflow:hidden}
+
+@keyframes pulseChat{0%,100%{box-shadow:0 0 25px rgba(0,255,204,0.5),0 0 50px rgba(0,255,204,0.3),0 4px 15px rgba(0,255,204,0.4)}50%{box-shadow:0 0 35px rgba(0,255,204,0.7),0 0 70px rgba(0,255,204,0.5),0 6px 20px rgba(0,255,204,0.6)}}
+
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+.chat-btn::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(255,255,255,0.1),transparent);transform:rotate(45deg);animation:shine 3s linear infinite}
+
+@keyframes shine{0%{transform:translateX(-100%) translateY(-100%) rotate(45deg)}100%{transform:translateX(100%) translateY(100%) rotate(45deg)}}
+
+.chat-btn:hover{transform:scale(1.08) translateY(-2px);box-shadow:0 0 40px rgba(0,255,204,0.8),0 0 80px rgba(0,255,204,0.6),0 8px 25px rgba(0,255,204,0.5);border-color:rgba(255,255,255,0.5)}
+
+.chat-btn svg{width:32px;height:32px;fill:#000;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))}
+
 .chat-btn-text{font-weight:700;color:#000;font-size:0.9rem;white-space:nowrap}
 
-.chat-container{position:fixed;bottom:100px;right:30px;width:350px;height:500px;background:rgba(0,0,0,0.95);border-radius:15px;box-shadow:0 10px 40px rgba(0,255,204,0.3);border:2px solid rgba(0,255,204,0.5);z-index:999;display:flex;flex-direction:column;overflow:hidden;backdrop-filter:blur(15px)}
-.chat-container.hidden{display:none}
+.chat-container{position:fixed;bottom:100px;right:30px;width:350px;height:500px;background:rgba(0,0,0,0.95);border-radius:15px;box-shadow:0 10px 40px rgba(0,255,204,0.3);border:2px solid rgba(0,255,204,0.5);z-index:999;display:flex;flex-direction:column;overflow:hidden;backdrop-filter:blur(15px);transform:scale(0.8);opacity:0;pointer-events:none;transform-origin:bottom right;transition:all 0.4s cubic-bezier(0.68,-0.55,0.265,1.55)}
+
+.chat-container.active{transform:scale(1);opacity:1;pointer-events:auto}
+
+.chat-container.hidden{transform:scale(0.8);opacity:0;pointer-events:none}
 
 .chat-header{background:linear-gradient(45deg,#00ffcc,#00d4aa);padding:15px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
 .chat-header-left{display:flex;align-items:center;gap:10px;flex:1}
