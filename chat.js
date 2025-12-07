@@ -18,10 +18,6 @@ let editingMessageId=null;
 let eventSource=null;
 let pollInterval=null;
 let lastMessageCount=0;
-let typingTimeout=null;
-let typingUsers=new Map();
-let isTyping=false;
-let lastTypingUpdate=0;
 
 localStorage.setItem('chatUserId',chatUserId);
 
@@ -186,8 +182,7 @@ function toggleChat(){
     }else{
         chatContainer.classList.remove('active');
         chatContainer.classList.add('hidden');
-        stopSSE();
-        stopTyping()
+        stopSSE()
     }
 }
 
@@ -417,14 +412,7 @@ async function addMessageToDOM(msg){
     }
     
     const messageDiv=await createMessageElement(msg);
-    
-    const typingIndicator=document.getElementById('typingIndicator');
-    if(typingIndicator){
-        container.insertBefore(messageDiv,typingIndicator)
-    }else{
-        container.appendChild(messageDiv)
-    }
-    
+    container.appendChild(messageDiv);
     displayedMessageIds.add(msgId);
     return true
 }
@@ -567,10 +555,6 @@ async function syncMessagesFromServer(){
                 lastTimestamp=Math.max(...data.messages.map(m=>m.timestamp))
             }
         }
-        
-        if(data.typing){
-            updateTypingIndicator(data.typing)
-        }
     }catch(error){
         console.error('Error:',error)
     }finally{
@@ -601,8 +585,6 @@ function initSSE(){
             if(data.type==='update'){
                 console.log('📨 Actualización SSE');
                 syncMessagesFromServer()
-            }else if(data.type==='typing'){
-                updateTypingIndicator(data.typing)
             }
         }catch(e){}
     };
@@ -622,12 +604,12 @@ function initSSE(){
 
 function startPolling(){
     if(pollInterval)return;
-    console.log('🔄 Polling activado (cada 1.5s)');
+    console.log('🔄 Polling activado (cada 3s)');
     pollInterval=setInterval(()=>{
         if(isChatOpen){
             syncMessagesFromServer()
         }
-    },1500)
+    },3000)
 }
 
 function stopPolling(){
@@ -644,118 +626,6 @@ function stopSSE(){
         eventSource=null
     }
     stopPolling()
-}
-
-function sendTypingIndicator(){
-    const now=Date.now();
-    
-    if(now-lastTypingUpdate<500)return;
-    lastTypingUpdate=now;
-    
-    if(typingTimeout){clearTimeout(typingTimeout)}
-    
-    if(!isTyping){
-        isTyping=true;
-        navigator.sendBeacon(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=true&t=${now}`)
-    }
-    
-    typingTimeout=setTimeout(()=>{
-        isTyping=false;
-        navigator.sendBeacon(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false&t=${Date.now()}`)
-    },1500)
-}
-
-function stopTyping(){
-    if(typingTimeout){
-        clearTimeout(typingTimeout);
-        typingTimeout=null
-    }
-    if(isTyping){
-        isTyping=false;
-        lastTypingUpdate=0;
-        navigator.sendBeacon(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false&t=${Date.now()}`)
-    }
-}
-
-function updateTypingIndicator(typingData){
-    if(!typingData){
-        typingUsers.clear();
-        displayTypingIndicator();
-        return
-    }
-    
-    const now=Date.now();
-    const newTypingUsers=new Map();
-    
-    Object.entries(typingData).forEach(([userId,data])=>{
-        if(userId!==chatUserId&&data.isTyping&&now-data.timestamp<3000){
-            newTypingUsers.set(userId,data.username)
-        }
-    });
-    
-    if(newTypingUsers.size!==typingUsers.size||![...newTypingUsers.keys()].every(k=>typingUsers.has(k))){
-        typingUsers=newTypingUsers;
-        displayTypingIndicator()
-    }
-}
-
-function displayTypingIndicator(){
-    const container=document.getElementById('chatMessages');
-    let typingIndicator=document.getElementById('typingIndicator');
-    
-    if(typingUsers.size===0){
-        if(typingIndicator){
-            typingIndicator.style.opacity='0';
-            typingIndicator.style.transform='scale(0.95)';
-            setTimeout(()=>{
-                if(typingIndicator&&typingIndicator.parentNode&&typingUsers.size===0){
-                    typingIndicator.remove()
-                }
-            },200)
-        }
-        return
-    }
-    
-    const names=Array.from(typingUsers.values());
-    let text='';
-    
-    if(names.length===1){
-        text=`${names[0]} está escribiendo...`
-    }else if(names.length===2){
-        text=`${names[0]} y ${names[1]} están escribiendo...`
-    }else{
-        text=`${names[0]} y ${names.length-1} más están escribiendo...`
-    }
-    
-    if(!typingIndicator){
-        typingIndicator=document.createElement('div');
-        typingIndicator.id='typingIndicator';
-        typingIndicator.className='typing-indicator';
-        typingIndicator.innerHTML=`
-            <div class="typing-content">
-                <div class="typing-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <span class="typing-text">${text}</span>
-            </div>
-        `;
-        container.appendChild(typingIndicator);
-        requestAnimationFrame(()=>{
-            typingIndicator.style.opacity='1';
-            typingIndicator.style.transform='scale(1)'
-        })
-    }else{
-        typingIndicator.querySelector('.typing-text').textContent=text;
-        typingIndicator.style.opacity='1';
-        typingIndicator.style.transform='scale(1)'
-    }
-    
-    const wasAtBottom=container.scrollHeight-container.scrollTop<=container.clientHeight+100;
-    if(wasAtBottom){
-        container.scrollTop=container.scrollHeight
-    }
 }
 
 function showSuggestionsPopup(type,items){
@@ -797,8 +667,6 @@ function handleChatInput(e){
     const lastHash=textBefore.lastIndexOf('#');
     const lastSpace=Math.max(textBefore.lastIndexOf(' '),textBefore.lastIndexOf('\n'));
     
-    sendTypingIndicator();
-    
     if(lastHash>lastSpace&&typeof gamesData!=='undefined'){
         const searchTerm=textBefore.substring(lastHash+1).toLowerCase();
         const matches=gamesData.filter(game=>{
@@ -820,8 +688,6 @@ async function sendChatMessage(){
     const btn=document.getElementById('chatSendBtn');
     
     document.getElementById('suggestionsPopup').classList.remove('active');
-    
-    stopTyping();
     
     const messageToSend=message;
     input.value='';
@@ -968,5 +834,5 @@ document.addEventListener('DOMContentLoaded',async function(){
         }
     });
     
-    console.log('✅ Chat inicializado - Sistema híbrido SSE + Polling + Typing Indicator')
+    console.log('✅ Chat inicializado - Sistema híbrido SSE + Polling')
 });
