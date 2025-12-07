@@ -621,12 +621,12 @@ function initSSE(){
 
 function startPolling(){
     if(pollInterval)return;
-    console.log('🔄 Polling activado (cada 3s)');
+    console.log('🔄 Polling activado (cada 2s)');
     pollInterval=setInterval(()=>{
         if(isChatOpen){
             syncMessagesFromServer()
         }
-    },3000)
+    },2000)
 }
 
 function stopPolling(){
@@ -650,15 +650,19 @@ function sendTypingIndicator(){
     
     if(!isTyping){
         isTyping=true;
-        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=true`)
-            .catch(e=>console.error(e))
+        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=true`,{
+            method:'GET',
+            keepalive:true
+        }).catch(e=>console.error(e))
     }
     
     typingTimeout=setTimeout(()=>{
         isTyping=false;
-        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false`)
-            .catch(e=>console.error(e))
-    },3000)
+        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false`,{
+            method:'GET',
+            keepalive:true
+        }).catch(e=>console.error(e))
+    },2000)
 }
 
 function stopTyping(){
@@ -668,18 +672,21 @@ function stopTyping(){
     }
     if(isTyping){
         isTyping=false;
-        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false`)
-            .catch(e=>console.error(e))
+        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false`,{
+            method:'GET',
+            keepalive:true
+        }).catch(e=>console.error(e))
     }
 }
 
 function updateTypingIndicator(typingData){
     if(!typingData)return;
     
+    const now=Date.now();
     typingUsers.clear();
     
     Object.entries(typingData).forEach(([userId,data])=>{
-        if(userId!==chatUserId&&data.isTyping&&Date.now()-data.timestamp<5000){
+        if(userId!==chatUserId&&data.isTyping&&now-data.timestamp<4000){
             typingUsers.set(userId,data.username)
         }
     });
