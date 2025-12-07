@@ -21,6 +21,7 @@ let lastMessageCount=0;
 let typingTimeout=null;
 let typingUsers=new Map();
 let isTyping=false;
+let lastTypingUpdate=0;
 
 localStorage.setItem('chatUserId',chatUserId);
 
@@ -621,12 +622,12 @@ function initSSE(){
 
 function startPolling(){
     if(pollInterval)return;
-    console.log('🔄 Polling activado (cada 2s)');
+    console.log('🔄 Polling activado (cada 1.5s)');
     pollInterval=setInterval(()=>{
         if(isChatOpen){
             syncMessagesFromServer()
         }
-    },2000)
+    },1500)
 }
 
 function stopPolling(){
@@ -646,23 +647,22 @@ function stopSSE(){
 }
 
 function sendTypingIndicator(){
+    const now=Date.now();
+    
+    if(now-lastTypingUpdate<500)return;
+    lastTypingUpdate=now;
+    
     if(typingTimeout){clearTimeout(typingTimeout)}
     
     if(!isTyping){
         isTyping=true;
-        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=true`,{
-            method:'GET',
-            keepalive:true
-        }).catch(e=>console.error(e))
+        navigator.sendBeacon(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=true&t=${now}`)
     }
     
     typingTimeout=setTimeout(()=>{
         isTyping=false;
-        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false`,{
-            method:'GET',
-            keepalive:true
-        }).catch(e=>console.error(e))
-    },2000)
+        navigator.sendBeacon(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false&t=${Date.now()}`)
+    },1500)
 }
 
 function stopTyping(){
@@ -672,26 +672,31 @@ function stopTyping(){
     }
     if(isTyping){
         isTyping=false;
-        fetch(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false`,{
-            method:'GET',
-            keepalive:true
-        }).catch(e=>console.error(e))
+        lastTypingUpdate=0;
+        navigator.sendBeacon(`${WORKER_URL}?action=typing&userId=${encodeURIComponent(chatUserId)}&username=${encodeURIComponent(chatUsername)}&isTyping=false&t=${Date.now()}`)
     }
 }
 
 function updateTypingIndicator(typingData){
-    if(!typingData)return;
+    if(!typingData){
+        typingUsers.clear();
+        displayTypingIndicator();
+        return
+    }
     
     const now=Date.now();
-    typingUsers.clear();
+    const newTypingUsers=new Map();
     
     Object.entries(typingData).forEach(([userId,data])=>{
-        if(userId!==chatUserId&&data.isTyping&&now-data.timestamp<4000){
-            typingUsers.set(userId,data.username)
+        if(userId!==chatUserId&&data.isTyping&&now-data.timestamp<3000){
+            newTypingUsers.set(userId,data.username)
         }
     });
     
-    displayTypingIndicator()
+    if(newTypingUsers.size!==typingUsers.size||![...newTypingUsers.keys()].every(k=>typingUsers.has(k))){
+        typingUsers=newTypingUsers;
+        displayTypingIndicator()
+    }
 }
 
 function displayTypingIndicator(){
@@ -701,11 +706,12 @@ function displayTypingIndicator(){
     if(typingUsers.size===0){
         if(typingIndicator){
             typingIndicator.style.opacity='0';
+            typingIndicator.style.transform='scale(0.95)';
             setTimeout(()=>{
-                if(typingIndicator&&typingIndicator.parentNode){
+                if(typingIndicator&&typingIndicator.parentNode&&typingUsers.size===0){
                     typingIndicator.remove()
                 }
-            },300)
+            },200)
         }
         return
     }
@@ -736,12 +742,20 @@ function displayTypingIndicator(){
             </div>
         `;
         container.appendChild(typingIndicator);
-        setTimeout(()=>{typingIndicator.style.opacity='1'},10)
+        requestAnimationFrame(()=>{
+            typingIndicator.style.opacity='1';
+            typingIndicator.style.transform='scale(1)'
+        })
     }else{
-        typingIndicator.querySelector('.typing-text').textContent=text
+        typingIndicator.querySelector('.typing-text').textContent=text;
+        typingIndicator.style.opacity='1';
+        typingIndicator.style.transform='scale(1)'
     }
     
-    container.scrollTop=container.scrollHeight
+    const wasAtBottom=container.scrollHeight-container.scrollTop<=container.clientHeight+100;
+    if(wasAtBottom){
+        container.scrollTop=container.scrollHeight
+    }
 }
 
 function showSuggestionsPopup(type,items){
