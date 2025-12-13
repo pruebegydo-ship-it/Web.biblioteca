@@ -185,21 +185,43 @@ async function fetchGameIcon(robloxUrl){
 function injectImageStyles(){
     const style=document.createElement('style');
     style.textContent=`
+        .script-card {
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: 400px;
+        }
         .card-image {
             width: 100%;
-            height: 100%;
+            height: 200px;
             object-fit: cover;
             object-position: center;
-        }
-        .card-image-container {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
             border-radius: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex-shrink: 0;
+        }
+        .card-content {
+            flex: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            padding: 15px 0;
+            min-height: 100px;
+        }
+        .card-title {
+            margin: 10px 0 5px 0;
+            flex-shrink: 0;
+        }
+        .card-description {
+            flex: 1;
+            margin: 5px 0;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        .button-container {
+            margin-top: auto;
+            padding-top: 10px;
+            flex-shrink: 0;
         }
     `;
     document.head.appendChild(style);
