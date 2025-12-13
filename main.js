@@ -3,6 +3,7 @@ const CLOUDFLARE_API="https://black-dust-9a67.nuryxd7.workers.dev";
 const DB_NAME="RobloxIconsDB";
 const DB_VERSION=1;
 const STORE_NAME="icons";
+const CACHE_VERSION="v1.0.0";
 
 const gamesData=[
     {name:"Dragon Blox Ultimate",description:"Script avanzado para farming automático y boosts de poder.",robloxUrl:"https://www.roblox.com/es/games/3311165597/Dragon-Blox-Ultimate",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
@@ -29,6 +30,7 @@ function initDB(){
         request.onerror=()=>reject(request.error);
         request.onsuccess=()=>{
             db=request.result;
+            checkAndClearOldCache();
             resolve(db);
         };
         
@@ -41,6 +43,27 @@ function initDB(){
     });
 }
 
+function checkAndClearOldCache(){
+    const storedVersion=localStorage.getItem('CACHE_VERSION');
+    if(storedVersion!==CACHE_VERSION){
+        console.log('Nueva versión detectada, limpiando caché...');
+        clearAllIcons().then(()=>{
+            localStorage.setItem('CACHE_VERSION',CACHE_VERSION);
+            console.log('Caché limpiado, versión actualizada a:',CACHE_VERSION);
+        });
+    }
+}
+
+async function clearAllIcons(){
+    return new Promise((resolve,reject)=>{
+        const transaction=db.transaction([STORE_NAME],'readwrite');
+        const store=transaction.objectStore(STORE_NAME);
+        const request=store.clear();
+        request.onsuccess=()=>resolve();
+        request.onerror=()=>reject(request.error);
+    });
+}
+
 async function saveIconToDB(placeId,iconBlob){
     return new Promise((resolve,reject)=>{
         const transaction=db.transaction([STORE_NAME],'readwrite');
@@ -48,7 +71,8 @@ async function saveIconToDB(placeId,iconBlob){
         const request=store.put({
             placeId:placeId,
             blob:iconBlob,
-            timestamp:Date.now()
+            timestamp:Date.now(),
+            version:CACHE_VERSION
         });
         request.onsuccess=()=>resolve();
         request.onerror=()=>reject(request.error);
@@ -62,7 +86,7 @@ async function getIconFromDB(placeId){
         const request=store.get(placeId);
         
         request.onsuccess=()=>{
-            if(request.result){
+            if(request.result&&request.result.version===CACHE_VERSION){
                 resolve(request.result.blob);
             }else{
                 resolve(null);
