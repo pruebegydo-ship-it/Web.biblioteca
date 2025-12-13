@@ -64,13 +64,14 @@ async function clearAllIcons(){
     });
 }
 
-async function saveIconToDB(placeId,iconBlob){
+async function saveIconToDB(placeId,iconBlob,iconUrl){
     return new Promise((resolve,reject)=>{
         const transaction=db.transaction([STORE_NAME],'readwrite');
         const store=transaction.objectStore(STORE_NAME);
         const request=store.put({
             placeId:placeId,
             blob:iconBlob,
+            iconUrl:iconUrl,
             timestamp:Date.now(),
             version:CACHE_VERSION
         });
@@ -87,7 +88,10 @@ async function getIconFromDB(placeId){
         
         request.onsuccess=()=>{
             if(request.result&&request.result.version===CACHE_VERSION){
-                resolve(request.result.blob);
+                resolve({
+                    blob:request.result.blob,
+                    iconUrl:request.result.iconUrl
+                });
             }else{
                 resolve(null);
             }
@@ -101,15 +105,23 @@ function extractPlaceId(url){
     return match?match[1]:null;
 }
 
+async function deleteIconFromDB(placeId){
+    return new Promise((resolve,reject)=>{
+        const transaction=db.transaction([STORE_NAME],'readwrite');
+        const store=transaction.objectStore(STORE_NAME);
+        const request=store.delete(placeId);
+        request.onsuccess=()=>resolve();
+        request.onerror=()=>reject(request.error);
+    });
+}
+
 async function fetchGameIcon(robloxUrl){
     const placeId=extractPlaceId(robloxUrl);
     if(!placeId)return null;
     
+    let cachedData=null;
     try{
-        const cachedBlob=await getIconFromDB(placeId);
-        if(cachedBlob){
-            return URL.createObjectURL(cachedBlob);
-        }
+        cachedData=await getIconFromDB(placeId);
     }catch(error){
         console.log('IndexedDB read error:',error);
     }
@@ -125,20 +137,37 @@ async function fetchGameIcon(robloxUrl){
             iconUrl=data.thumbnailUrl;
         }
         
-        if(iconUrl){
-            const imageResponse=await fetch(iconUrl);
-            const blob=await imageResponse.blob();
-            
-            try{
-                await saveIconToDB(placeId,blob);
-            }catch(error){
-                console.log('IndexedDB save error:',error);
-            }
-            
-            return URL.createObjectURL(blob);
+        if(!iconUrl)return null;
+        
+        if(cachedData&&cachedData.iconUrl===iconUrl){
+            console.log(`Usando caché para ${placeId}`);
+            return URL.createObjectURL(cachedData.blob);
         }
+        
+        console.log(`Descargando nueva imagen para ${placeId}`);
+        
+        if(cachedData){
+            await deleteIconFromDB(placeId);
+        }
+        
+        const imageResponse=await fetch(iconUrl);
+        const blob=await imageResponse.blob();
+        
+        try{
+            await saveIconToDB(placeId,blob,iconUrl);
+        }catch(error){
+            console.log('IndexedDB save error:',error);
+        }
+        
+        return URL.createObjectURL(blob);
+        
     }catch(error){
         console.error('Error fetching icon:',error);
+        
+        if(cachedData){
+            console.log(`Usando caché antiguo para ${placeId} por error de red`);
+            return URL.createObjectURL(cachedData.blob);
+        }
     }
     
     return null;
