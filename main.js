@@ -1,10 +1,14 @@
 const GOOGLE_APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbzZqCbnJDnkIZ_lk8OPxPQgXFqRSSBjUOHX7wr3G9VklP07zB9_0FHPNiF6RE4Uvx5T/exec";
+const CLOUDFLARE_API="https://black-dust-9a67.nuryxd7.workers.dev";
+const DB_NAME="RobloxIconsDB";
+const DB_VERSION=1;
+const STORE_NAME="icons";
 
 const gamesData=[
-    {name:"Dragon Blox Ultimate",description:"Script avanzado para farming automático y boosts de poder.",imageUrl:"https://tr.rbxcdn.com/180DAY-6961230649b9d70b5c052ac56ecf22ba/512/512/Image/Webp/noFilter",robloxUrl:"https://www.roblox.com/es/games/3311165597/Dragon-Blox-Ultimate",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
-    {name:"War Machines",description:"Script avanzado para farming automático y boosts de poder.",imageUrl:"https://tr.rbxcdn.com/180DAY-f6a678c5e280891454f63d7635e5c9bc/768/432/Image/Webp/noFilter",robloxUrl:"https://www.roblox.com/es/games/12828227139/War-Machines",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
-    {name:"Muscle Legends",description:"Script avanzado para farming automático y boosts de poder.",imageUrl:"https://tr.rbxcdn.com/180DAY-ae175f6dcd51e304011ab131e7042067/768/432/Image/Webp/noFilter",robloxUrl:"https://www.roblox.com/es/games/3623096087/Muscle-Legends",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
-    {name:"Dragon Ball Rage",description:"Script avanzado para farming automático y boosts de poder,AutoTrafoamcion Ataques y varias mas",imageUrl:"https://tr.rbxcdn.com/180DAY-92b36c16176e790f87286e5680e39c0c/768/432/Image/Webp/noFilter",robloxUrl:"https://www.roblox.com/es/games/71315343/SSJ3-Dragon-Ball-Rage",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"}
+    {name:"Dragon Blox Ultimate",description:"Script avanzado para farming automático y boosts de poder.",robloxUrl:"https://www.roblox.com/es/games/3311165597/Dragon-Blox-Ultimate",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
+    {name:"War Machines",description:"Script avanzado para farming automático y boosts de poder.",robloxUrl:"https://www.roblox.com/es/games/12828227139/War-Machines",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
+    {name:"Muscle Legends",description:"Script avanzado para farming automático y boosts de poder.",robloxUrl:"https://www.roblox.com/es/games/3623096087/Muscle-Legends",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
+    {name:"Dragon Ball Rage",description:"Script avanzado para farming automático y boosts de poder,AutoTrafoamcion Ataques y varias mas",robloxUrl:"https://www.roblox.com/es/games/71315343/SSJ3-Dragon-Ball-Rage",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"}
 ];
 
 const track=document.getElementById('track');
@@ -16,6 +20,128 @@ let isDragging=false;
 let startX=0;
 let startTime=0;
 let gameMapping={};
+let db=null;
+
+function initDB(){
+    return new Promise((resolve,reject)=>{
+        const request=indexedDB.open(DB_NAME,DB_VERSION);
+        
+        request.onerror=()=>reject(request.error);
+        request.onsuccess=()=>{
+            db=request.result;
+            resolve(db);
+        };
+        
+        request.onupgradeneeded=(e)=>{
+            const database=e.target.result;
+            if(!database.objectStoreNames.contains(STORE_NAME)){
+                database.createObjectStore(STORE_NAME,{keyPath:'placeId'});
+            }
+        };
+    });
+}
+
+async function saveIconToDB(placeId,iconBlob){
+    return new Promise((resolve,reject)=>{
+        const transaction=db.transaction([STORE_NAME],'readwrite');
+        const store=transaction.objectStore(STORE_NAME);
+        const request=store.put({
+            placeId:placeId,
+            blob:iconBlob,
+            timestamp:Date.now()
+        });
+        request.onsuccess=()=>resolve();
+        request.onerror=()=>reject(request.error);
+    });
+}
+
+async function getIconFromDB(placeId){
+    return new Promise((resolve,reject)=>{
+        const transaction=db.transaction([STORE_NAME],'readonly');
+        const store=transaction.objectStore(STORE_NAME);
+        const request=store.get(placeId);
+        
+        request.onsuccess=()=>{
+            if(request.result){
+                resolve(request.result.blob);
+            }else{
+                resolve(null);
+            }
+        };
+        request.onerror=()=>reject(request.error);
+    });
+}
+
+function extractPlaceId(url){
+    const match=url.match(/games\/(\d+)/);
+    return match?match[1]:null;
+}
+
+async function fetchGameIcon(robloxUrl){
+    const placeId=extractPlaceId(robloxUrl);
+    if(!placeId)return null;
+    
+    try{
+        const cachedBlob=await getIconFromDB(placeId);
+        if(cachedBlob){
+            return URL.createObjectURL(cachedBlob);
+        }
+    }catch(error){
+        console.log('IndexedDB read error:',error);
+    }
+    
+    try{
+        const response=await fetch(`${CLOUDFLARE_API}/game/${placeId}`);
+        const data=await response.json();
+        
+        let iconUrl=null;
+        if(data.success&&data.iconUrl){
+            iconUrl=data.iconUrl;
+        }else if(data.success&&data.thumbnailUrl){
+            iconUrl=data.thumbnailUrl;
+        }
+        
+        if(iconUrl){
+            const imageResponse=await fetch(iconUrl);
+            const blob=await imageResponse.blob();
+            
+            try{
+                await saveIconToDB(placeId,blob);
+            }catch(error){
+                console.log('IndexedDB save error:',error);
+            }
+            
+            return URL.createObjectURL(blob);
+        }
+    }catch(error){
+        console.error('Error fetching icon:',error);
+    }
+    
+    return null;
+}
+
+function injectImageStyles(){
+    const style=document.createElement('style');
+    style.textContent=`
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+        .card-image-container {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 function generateAcronym(gameName){
     const cleanName=gameName.replace(/[^\w\s]/g,'').trim();
@@ -51,25 +177,36 @@ function generateGameMappings(){
     })
 }
 
-function renderGameCards(){
+async function renderGameCards(){
     track.innerHTML='';
     const template=document.getElementById('script-card-template');
     
-    gamesData.forEach((game,index)=>{
+    for(const game of gamesData){
         const card=template.content.cloneNode(true).children[0];
         const cleanGameNameForFilename=game.name.replace(/[^a-zA-Z0-9\s]/g,'').replace(/\s+/g,'_');
         
         card.setAttribute('data-game',game.name);
         card.querySelector('.copy-btn').setAttribute('onclick',`copyScript('${game.scriptUrl}')`);
-        card.querySelector('.card-image').src=game.imageUrl;
-        card.querySelector('.card-image').alt=game.name;
+        
+        const cardImage=card.querySelector('.card-image');
+        cardImage.alt=game.name;
+        cardImage.src='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="512" height="512"%3E%3Crect fill="%23667eea" width="512" height="512"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="48" fill="white"%3ECargando...%3C/text%3E%3C/svg%3E';
+        
         card.querySelector('.card-title').textContent=game.name;
         card.querySelector('.card-description').textContent=game.description;
         card.querySelector('.button-container a').href=game.robloxUrl;
         card.querySelector('.button-container button').setAttribute('onclick',`downloadScript('${cleanGameNameForFilename}',\`loadstring(game:HttpGet('${game.scriptUrl}'))()\`)`);
         
-        track.appendChild(card)
-    });
+        track.appendChild(card);
+        
+        fetchGameIcon(game.robloxUrl).then(blobUrl=>{
+            if(blobUrl){
+                cardImage.src=blobUrl;
+            }else{
+                cardImage.src='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="512" height="512"%3E%3Crect fill="%23667eea" width="512" height="512"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="48" fill="white"%3E'+encodeURIComponent(generateAcronym(game.name))+'%3C/text%3E%3C/svg%3E';
+            }
+        });
+    }
     
     cards=Array.from(track.children);
     generateGameMappings();
@@ -428,8 +565,10 @@ async function updateVisitorCount(){
     }catch(error){console.error('Error:',error)}
 }
 
-function init(){
-    renderGameCards();
+async function init(){
+    injectImageStyles();
+    await initDB();
+    await renderGameCards();
     
     const gameFromURL=getGameFromURL();
     if(gameFromURL){
