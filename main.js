@@ -1,9 +1,9 @@
 const GOOGLE_APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbzZqCbnJDnkIZ_lk8OPxPQgXFqRSSBjUOHX7wr3G9VklP07zB9_0FHPNiF6RE4Uvx5T/exec";
 const CLOUDFLARE_API="https://black-dust-9a67.nuryxd7.workers.dev";
 const DB_NAME="RobloxIconsDB";
-const DB_VERSION=1;
+const DB_VERSION=2;
 const STORE_NAME="icons";
-const CACHE_VERSION="v1.0.0";
+const CACHE_VERSION="v2.0.0";
 
 const gamesData=[
     {name:"Dragon Blox Ultimate",description:"Script avanzado para farming automático y boosts de poder.",robloxUrl:"https://www.roblox.com/es/games/3311165597/Dragon-Blox-Ultimate",scriptUrl:"https://raw.githubusercontent.com/Colato6/Prueba.1/refs/heads/main/Farm.lua"},
@@ -25,20 +25,29 @@ let db=null;
 
 function initDB(){
     return new Promise((resolve,reject)=>{
+        const storedVersion=localStorage.getItem('CACHE_VERSION');
+        
+        if(storedVersion&&storedVersion!==CACHE_VERSION){
+            console.log('Borrando base de datos antigua...');
+            indexedDB.deleteDatabase(DB_NAME);
+            localStorage.clear();
+        }
+        
         const request=indexedDB.open(DB_NAME,DB_VERSION);
         
         request.onerror=()=>reject(request.error);
         request.onsuccess=()=>{
             db=request.result;
-            checkAndClearOldCache();
+            localStorage.setItem('CACHE_VERSION',CACHE_VERSION);
             resolve(db);
         };
         
         request.onupgradeneeded=(e)=>{
             const database=e.target.result;
-            if(!database.objectStoreNames.contains(STORE_NAME)){
-                database.createObjectStore(STORE_NAME,{keyPath:'placeId'});
+            if(database.objectStoreNames.contains(STORE_NAME)){
+                database.deleteObjectStore(STORE_NAME);
             }
+            database.createObjectStore(STORE_NAME,{keyPath:'placeId'});
         };
     });
 }
