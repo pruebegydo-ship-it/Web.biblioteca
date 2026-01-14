@@ -1,4 +1,4 @@
-const WORKER_URL='https://jolly-bush-a809.armijosfeo.workers.dev';
+const WORKER_URL='https://dawn-mouse-9410.armijosfeo5.workers.dev';
 const GOOGLE_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwMRncb4s858zQYSlkUqVD4XmMi9pjFraC7toEha1Dd-INn0V0OcWiv7ivD4gjOTT3rFA/exec';
 const IMGBB_API_KEY='dcd38e938cece07962c8f5a37df2f131';
 const IMGBB_API_URL='https://api.imgbb.com/1/upload';
