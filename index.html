@@ -6,22 +6,202 @@
     <title>Biblioteca Avanzada de Scripts de Roblox</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+    #bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;opacity:0.55;}
+    .side-panel{width:220px!important;}
+    .panel-visits-row{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(0,255,204,0.07),rgba(0,80,180,0.05));border:1px solid rgba(0,255,204,0.18);border-radius:10px;padding:7px 10px;box-shadow:0 0 10px rgba(0,255,204,0.05),inset 0 1px 0 rgba(255,255,255,0.04);max-width:fit-content;}
+    .eye-wrap{width:32px;height:20px;flex-shrink:0;}
+    .eye-svg{width:32px;height:20px;}
+    .panel-visits-label{font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;color:rgba(0,255,204,0.5);font-weight:700;line-height:1;}
+    .panel-visits-count{font-size:0.95rem;font-weight:800;color:#fff;line-height:1.15;text-shadow:0 0 8px rgba(0,255,204,0.35);}
+    .panel-lightning-icon{width:22px;height:22px;flex-shrink:0;}
+    .panel-title{font-size:0.65rem;}
+    .cat-label{font-size:0.5rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(0,255,204,0.4);padding:14px 14px 8px;display:block;}
+    .cat-buttons{display:flex;flex-direction:column;gap:7px;padding:0 6px;}
+    .cat-btn{
+        display:flex;align-items:center;gap:10px;
+        padding:8px 14px;border-radius:11px;cursor:pointer;
+        background:rgba(255,255,255,0.03);
+        border:1px solid rgba(255,255,255,0.07);
+        color:rgba(255,255,255,0.6);font-size:0.8rem;font-weight:600;
+        font-family:'Poppins',sans-serif;
+        transition:all 0.22s ease;text-align:left;width:100%;
+    }
+    .cat-btn:hover{background:rgba(0,255,204,0.08);border-color:rgba(0,255,204,0.28);color:#fff;}
+    .cat-btn.active{background:linear-gradient(135deg,rgba(0,255,204,0.13),rgba(0,120,200,0.08));border-color:rgba(0,255,204,0.45);color:#00ffcc;box-shadow:0 0 14px rgba(0,255,204,0.1),inset 0 1px 0 rgba(0,255,204,0.08);}
+    .cat-icon-wrap{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);}
+    .cat-btn.active .cat-icon-wrap{background:rgba(0,255,204,0.1);border-color:rgba(0,255,204,0.3);}
+    .cat-icon-wrap svg{width:15px;height:15px;fill:rgba(255,255,255,0.5);}
+    .cat-btn.active .cat-icon-wrap svg{fill:#00ffcc;}
+    .cat-name{flex:1;letter-spacing:0.3px;}
+    .cat-count{font-size:0.62rem;color:rgba(255,255,255,0.25);font-weight:700;background:rgba(255,255,255,0.06);padding:2px 7px;border-radius:20px;}
+    .cat-btn.active .cat-count{color:rgba(0,255,204,0.8);background:rgba(0,255,204,0.1);}
+    </style>
 </head>
 <body>
+    <canvas id="bgCanvas"></canvas>
+    <script>
+    (function(){
+        const canvas=document.getElementById('bgCanvas');
+        const ctx=canvas.getContext('2d');
+        const tokens=['loadstring','game:HttpGet','function','local','end','true','false','wait','pcall','pairs','ipairs','tostring','tonumber','print','return','if','then','else','repeat','until','while','do','break','nil','not','and','or','math.random','string.format','table.insert','Instance.new','workspace','Players','RunService','RemoteEvent','script','getfenv','setfenv','rawget','rawset','Vector3','CFrame','Color3','UDim2','TweenService','HttpService',':#','::','{}','[]','()', '--[[',']]','0xFF','\\x','\\u','base64','AES','XOR','SHA','encrypt','decrypt','obfusc','inject','hook','bypass','anti','detect','farm','auto','kill','esp','aimbot','speed','fly','noclip','inf','loop'];
+        let cols, drops, fontSize=13;
+        function resize(){
+            canvas.width=window.innerWidth;
+            canvas.height=window.innerHeight;
+            cols=Math.floor(canvas.width/fontSize);
+            drops=new Array(cols).fill(0).map(()=>-Math.random()*80);
+        }
+        resize();
+        window.addEventListener('resize',resize);
+        function draw(){
+            ctx.fillStyle='rgba(0,4,20,0.18)';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            for(let i=0;i<cols;i++){
+                const tok=tokens[Math.floor(Math.random()*tokens.length)];
+                const char=tok[Math.floor(Math.random()*tok.length)];
+                const y=drops[i]*fontSize;
+                const head=(drops[i]-1)*fontSize;
+                // head char — bright white/cyan
+                ctx.font=`bold ${fontSize}px monospace`;
+                ctx.fillStyle='rgba(220,255,250,0.95)';
+                ctx.fillText(char,i*fontSize,head);
+                // trail
+                const green=Math.random()>0.7;
+                if(green){ctx.fillStyle=`rgba(0,255,${150+Math.random()*105},${0.1+Math.random()*0.4})`;}
+                else{ctx.fillStyle=`rgba(0,${180+Math.random()*75},${200+Math.random()*55},${0.08+Math.random()*0.25})`;}
+                ctx.font=`${fontSize}px monospace`;
+                ctx.fillText(char,i*fontSize,y);
+                if(y>canvas.height&&Math.random()>0.975) drops[i]=0;
+                drops[i]+=0.4+Math.random()*0.3;
+            }
+        }
+        setInterval(draw,45);
+    })();
+    </script>
     <div class="video-fullscreen-modal" id="videoModal">
         <button class="video-fullscreen-close" onclick="closeVideoModal()">×</button>
         <div class="video-fullscreen-content" id="videoModalContent"></div>
     </div>
 
-    <div class="visitor-counter" id="visitorCounter">
-        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 13c-3.03 0-5.5-2.47-5.5-5.5s2.47-5.5 5.5-5.5 5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5zm0-9c-1.93 0-3.5 1.57-3.5 3.5s1.57 3.5 3.5 3.5 3.5-1.57 3.5-3.5-1.57-3.5-3.5-3.5z"/></svg>
-        <span id="visitCount">0</span>
+    <!-- PANEL OVERLAY -->
+    <div class="panel-overlay" id="panelOverlay" onclick="closeMenu()"></div>
+
+    <!-- SIDE PANEL -->
+    <div class="side-panel" id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-header-top">
+                <div class="panel-title-wrap">
+                    <svg class="panel-lightning-icon" viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="boltGrad" x1="30%" y1="0%" x2="70%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="25%" stop-color="#aaffee"/>
+                                <stop offset="60%" stop-color="#00ffcc"/>
+                                <stop offset="100%" stop-color="#0088ff"/>
+                            </linearGradient>
+                            <filter id="boltGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="1.5" result="g1"/>
+                                <feGaussianBlur stdDeviation="0.5" result="g2"/>
+                                <feMerge><feMergeNode in="g1"/><feMergeNode in="g2"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <filter id="boltHalo" x="-80%" y="-80%" width="260%" height="260%">
+                                <feGaussianBlur stdDeviation="3.5" result="halo"/>
+                                <feColorMatrix in="halo" type="matrix" values="0 0.8 0.6 0 0  0 1 0.8 0 0  0 0.5 0.8 0 0  0 0 0 0.55 0"/>
+                                <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                        </defs>
+                        <path d="M12 1L3 14.5h7L8.5 25 17 11.5h-7z" fill="rgba(0,200,150,0.25)" filter="url(#boltHalo)"/>
+                        <path d="M12 1L3 14.5h7L8.5 25 17 11.5h-7z" fill="url(#boltGrad)" filter="url(#boltGlow)" stroke="rgba(180,255,240,0.5)" stroke-width="0.4" stroke-linejoin="round"/>
+                        <path d="M11.5 3.5L5 13.5h5.5l-1 7 6-9h-5.5z" fill="rgba(255,255,255,0.18)"/>
+                        <line x1="10.5" y1="4" x2="8.5" y2="12" stroke="rgba(255,255,255,0.55)" stroke-width="0.8" stroke-linecap="round"/>
+                    </svg>
+                    <span class="panel-title">MENÚ</span>
+                </div>
+                <button class="panel-close" onclick="closeMenu()">×</button>
+            </div>
+            <!-- VISITS: ojo animado + contador -->
+            <div class="panel-visits-row" id="visitorCounter">
+                <div class="eye-wrap" id="eyeWrap">
+                    <svg class="eye-svg" viewBox="0 0 48 28" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <radialGradient id="irisGrad" cx="50%" cy="42%" r="50%">
+                                <stop offset="0%" stop-color="#00ffee"/>
+                                <stop offset="45%" stop-color="#0088cc"/>
+                                <stop offset="100%" stop-color="#002244"/>
+                            </radialGradient>
+                            <radialGradient id="pupilGrad" cx="40%" cy="38%" r="55%">
+                                <stop offset="0%" stop-color="#111"/>
+                                <stop offset="100%" stop-color="#000"/>
+                            </radialGradient>
+                            <filter id="eyeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="1.2" result="g"/>
+                                <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                        </defs>
+                        <!-- forma del ojo -->
+                        <path d="M4 14 Q24 1 44 14 Q24 27 4 14Z" fill="rgba(200,230,255,0.88)" filter="url(#eyeGlow)"/>
+                        <!-- iris -->
+                        <circle cx="24" cy="14" r="8.5" fill="url(#irisGrad)"/>
+                        <!-- anillo iris -->
+                        <circle cx="24" cy="14" r="8.5" fill="none" stroke="rgba(0,220,255,0.3)" stroke-width="1"/>
+                        <!-- pupila -->
+                        <circle cx="24" cy="14" r="4.5" fill="url(#pupilGrad)"/>
+                        <!-- destellos -->
+                        <circle cx="27" cy="11" r="1.6" fill="rgba(255,255,255,0.92)"/>
+                        <circle cx="21.5" cy="16.5" r="0.8" fill="rgba(255,255,255,0.45)"/>
+                        <!-- borde del ojo -->
+                        <path d="M4 14 Q24 1 44 14 Q24 27 4 14Z" fill="none" stroke="rgba(0,255,204,0.5)" stroke-width="0.9"/>
+                        <!-- pestañas superiores mínimas -->
+                        <path d="M12 8.5 Q10.5 5.5 10 4" stroke="rgba(0,255,204,0.6)" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+                        <path d="M20 5 Q20 2.5 20 1.5" stroke="rgba(0,255,204,0.6)" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+                        <path d="M28 5 Q28 2.5 28 1.5" stroke="rgba(0,255,204,0.6)" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+                        <path d="M36 8.5 Q37.5 5.5 38 4" stroke="rgba(0,255,204,0.6)" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="panel-visits-info">
+                    <span class="panel-visits-label">Visitas</span>
+                    <span class="panel-visits-count" id="visitCount">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body">
+            <span class="cat-label">Categorías</span>
+            <div class="cat-buttons">
+                <button class="cat-btn active" onclick="filterCategory('all',this)">
+                    <div class="cat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></div>
+                    <span class="cat-name">Todos</span><span class="cat-count">4</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('dragonball',this)">
+                    <div class="cat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+                    <span class="cat-name">Dragon Ball</span><span class="cat-count">2</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('accion',this)">
+                    <div class="cat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14.5 2.5c0 1.5-1.5 7-1.5 7h-2S9.5 4 9.5 2.5a2.5 2.5 0 015 0zM12 11a2 2 0 100 4 2 2 0 000-4zm-5.5 1c1.5 0 7 1.5 7 1.5v2S8 16.5 6.5 16.5a2.5 2.5 0 010-5zm11 0a2.5 2.5 0 010 5C16 17 10.5 15.5 10.5 15.5v-2S16.5 12 17.5 12zM12 17c0 1.5-1.5 5-1.5 5h2s1.5-3.5 1.5-5"/></svg></div>
+                    <span class="cat-name">Acción</span><span class="cat-count">1</span>
+                </button>
+                <button class="cat-btn" onclick="filterCategory('simulador',this)">
+                    <div class="cat-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg></div>
+                    <span class="cat-name">Simulador</span><span class="cat-count">1</span>
+                </button>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <span class="panel-footer-label">Comunidad</span>
+            <button class="discord-icon-btn" onclick="window.open('https://discord.gg/2gpJGJCAMw','_blank')" title="Discord">
+                <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127c-.598.349-1.225.647-1.873.892a.076.076 0 0 0-.041.106c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+            </button>
+        </div>
     </div>
 
-    <div class="discord-btn" onclick="window.open('https://discord.gg/2gpJGJCAMw','_blank')">
-        <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127c-.598.349-1.225.647-1.873.892a.076.076 0 0 0-.041.106c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-    </div>
+    <!-- HAMBURGER SOLO (top-left) -->
+    <button class="menu-hamburger" onclick="toggleMenu()" aria-label="Abrir menú">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
 
+    <!-- CHAT BTN (bottom-left) -->
     <div class="chat-btn" id="chatBtn" onclick="toggleChat()">
         <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/><circle cx="12" cy="10" r="1"/><circle cx="8" cy="10" r="1"/><circle cx="16" cy="10" r="1"/></svg>
     </div>
@@ -72,7 +252,7 @@
 
     <div class="indicators" id="indicators"></div>
 
-    <div class="footer"><p>Biblioteca de Scripts de Roblox - Actualizado 2025</p></div>
+
 
     <template id="script-card-template">
         <div class="script-card">
@@ -95,5 +275,58 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="chat.js"></script>
     <script src="main.js"></script>
+    <script>
+    function toggleMenu(){
+        const panel=document.getElementById('sidePanel');
+        const overlay=document.getElementById('panelOverlay');
+        const btn=document.querySelector('.menu-hamburger');
+        const isOpen=panel.classList.contains('open');
+        panel.classList.toggle('open',!isOpen);
+        overlay.classList.toggle('active',!isOpen);
+        btn.classList.toggle('active',!isOpen);
+    }
+    function closeMenu(){
+        document.getElementById('sidePanel').classList.remove('open');
+        document.getElementById('panelOverlay').classList.remove('active');
+        document.querySelector('.menu-hamburger').classList.remove('active');
+    }
+    function triggerBlink(){
+        const eye=document.getElementById('eyeWrap');
+        eye.classList.remove('blink');
+        void eye.offsetWidth;
+        eye.classList.add('blink');
+    }
+    function filterCategory(cat,btn){
+        document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        if(typeof filterCards==='function'){
+            if(cat==='all'){filterCards('');}
+            else{
+                const map={dragonball:['Dragon Blox Ultimate','Dragon Ball Rage'],accion:['War Machines'],simulador:['Muscle Legends']};
+                const names=map[cat]||[];
+                if(typeof cards!=='undefined'){
+                    cards.forEach(card=>{
+                        const g=card.getAttribute('data-game')||'';
+                        card.style.display=names.includes(g)?'block':'none';
+                    });
+                    if(typeof updateCoverflow==='function')updateCoverflow();
+                }
+            }
+        }
+        if(typeof closeMenu==='function')closeMenu();
+    }
+    function animateVisitNum(from,to,duration){
+        const el=document.getElementById('visitCount');
+        const start=performance.now();
+        function step(now){
+            const p=Math.min((now-start)/duration,1);
+            const ease=1-Math.pow(1-p,4);
+            el.textContent=Math.round(from+(to-from)*ease);
+            if(p<1)requestAnimationFrame(step);
+            else{el.textContent=to;}
+        }
+        requestAnimationFrame(step);
+    }
+    </script>
 </body>
 </html>
