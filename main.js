@@ -26,22 +26,18 @@ let db=null;
 function initDB(){
     return new Promise((resolve,reject)=>{
         const storedVersion=localStorage.getItem('CACHE_VERSION');
-        
         if(storedVersion&&storedVersion!==CACHE_VERSION){
             console.log('Borrando base de datos antigua...');
             indexedDB.deleteDatabase(DB_NAME);
             localStorage.clear();
         }
-        
         const request=indexedDB.open(DB_NAME,DB_VERSION);
-        
         request.onerror=()=>reject(request.error);
         request.onsuccess=()=>{
             db=request.result;
             localStorage.setItem('CACHE_VERSION',CACHE_VERSION);
             resolve(db);
         };
-        
         request.onupgradeneeded=(e)=>{
             const database=e.target.result;
             if(database.objectStoreNames.contains(STORE_NAME)){
@@ -94,7 +90,6 @@ async function getIconFromDB(placeId){
         const transaction=db.transaction([STORE_NAME],'readonly');
         const store=transaction.objectStore(STORE_NAME);
         const request=store.get(placeId);
-        
         request.onsuccess=()=>{
             if(request.result&&request.result.version===CACHE_VERSION){
                 resolve({
@@ -127,58 +122,45 @@ async function deleteIconFromDB(placeId){
 async function fetchGameIcon(robloxUrl){
     const placeId=extractPlaceId(robloxUrl);
     if(!placeId)return null;
-    
     let cachedData=null;
     try{
         cachedData=await getIconFromDB(placeId);
     }catch(error){
         console.log('IndexedDB read error:',error);
     }
-    
     try{
         const response=await fetch(`${CLOUDFLARE_API}/game/${placeId}`);
         const data=await response.json();
-        
         let iconUrl=null;
         if(data.success&&data.iconUrl){
             iconUrl=data.iconUrl;
         }else if(data.success&&data.thumbnailUrl){
             iconUrl=data.thumbnailUrl;
         }
-        
         if(!iconUrl)return null;
-        
         if(cachedData&&cachedData.iconUrl===iconUrl){
             console.log(`Usando caché para ${placeId}`);
             return URL.createObjectURL(cachedData.blob);
         }
-        
         console.log(`Descargando nueva imagen para ${placeId}`);
-        
         if(cachedData){
             await deleteIconFromDB(placeId);
         }
-        
         const imageResponse=await fetch(iconUrl);
         const blob=await imageResponse.blob();
-        
         try{
             await saveIconToDB(placeId,blob,iconUrl);
         }catch(error){
             console.log('IndexedDB save error:',error);
         }
-        
         return URL.createObjectURL(blob);
-        
     }catch(error){
         console.error('Error fetching icon:',error);
-        
         if(cachedData){
             console.log(`Usando caché antiguo para ${placeId} por error de red`);
             return URL.createObjectURL(cachedData.blob);
         }
     }
-    
     return null;
 }
 
@@ -264,25 +246,19 @@ function generateGameMappings(){
 async function renderGameCards(){
     track.innerHTML='';
     const template=document.getElementById('script-card-template');
-    
     for(const game of gamesData){
         const card=template.content.cloneNode(true).children[0];
         const cleanGameNameForFilename=game.name.replace(/[^a-zA-Z0-9\s]/g,'').replace(/\s+/g,'_');
-        
         card.setAttribute('data-game',game.name);
         card.querySelector('.copy-btn').setAttribute('onclick',`copyScript('${game.scriptUrl}')`);
-        
         const cardImage=card.querySelector('.card-image');
         cardImage.alt=game.name;
         cardImage.src='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="512" height="512"%3E%3Crect fill="%23667eea" width="512" height="512"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="48" fill="white"%3ECargando...%3C/text%3E%3C/svg%3E';
-        
         card.querySelector('.card-title').textContent=game.name;
         card.querySelector('.card-description').textContent=game.description;
         card.querySelector('.button-container a').href=game.robloxUrl;
         card.querySelector('.button-container button').setAttribute('onclick',`downloadScript('${cleanGameNameForFilename}',\`loadstring(game:HttpGet('${game.scriptUrl}'))()\`)`);
-        
         track.appendChild(card);
-        
         fetchGameIcon(game.robloxUrl).then(blobUrl=>{
             if(blobUrl){
                 cardImage.src=blobUrl;
@@ -291,7 +267,6 @@ async function renderGameCards(){
             }
         });
     }
-    
     cards=Array.from(track.children);
     generateGameMappings();
     createIndicators();
@@ -318,9 +293,7 @@ function updateIndicators(){
 function updateCoverflow(){
     const visibleCards=cards.filter(card=>card.style.display!=='none');
     if(visibleCards.length===0)return;
-    
     currentIndex=Math.max(0,Math.min(currentIndex,visibleCards.length-1));
-    
     visibleCards.forEach((card,visIndex)=>{
         const offset=visIndex-currentIndex;
         const x=offset*250;
@@ -329,7 +302,6 @@ function updateCoverflow(){
         const scale=Math.max(0.75,1-Math.abs(offset)*0.1);
         const opacity=Math.max(0.5,1-Math.abs(offset)*0.25);
         const zIndex=100-Math.abs(offset);
-        
         gsap.to(card,{
             duration:0.6,
             x:x,
@@ -345,7 +317,6 @@ function updateCoverflow(){
             }
         })
     });
-    
     updateIndicators()
 }
 
@@ -370,12 +341,10 @@ function smartSearch(searchTerm,gameName,acronym){
     const search=searchTerm.toLowerCase().trim();
     const name=gameName.toLowerCase();
     const acr=acronym.toLowerCase();
-    
     if(!search)return true;
     if(search===acr)return true;
     if(acr.startsWith(search))return true;
     if(name.includes(search))return true;
-    
     const searchWords=search.split(' ');
     const nameWords=name.split(' ');
     return searchWords.every(searchWord=>
@@ -390,17 +359,14 @@ function showSuggestions(searchTerm){
         suggestionsContainer.style.display='none';
         return
     }
-    
     const suggestions=[];
     const addedTitles=new Set();
-    
     Object.values(gameMapping).forEach(game=>{
         if(!addedTitles.has(game.title)&&smartSearch(searchTerm,game.title,game.acronym)){
             suggestions.push(game);
             addedTitles.add(game.title)
         }
     });
-    
     if(suggestions.length>0){
         suggestionsContainer.innerHTML='';
         suggestions.slice(0,5).forEach(game=>{
@@ -530,10 +496,8 @@ function getGameFromURL(){
     const urlParams=new URLSearchParams(window.location.search);
     const gameParam=urlParams.get('game');
     if(gameParam){return decodeURIComponent(gameParam)}
-    
     const hash=window.location.hash.slice(1);
     if(hash){return decodeURIComponent(hash)}
-    
     const pathParts=window.location.pathname.split('/').filter(p=>p);
     const lastPart=pathParts[pathParts.length-1];
     if(lastPart&&lastPart!=='Web.biblioteca'&&!lastPart.includes('.html')){
@@ -545,12 +509,10 @@ function getGameFromURL(){
 function findGameIndex(gameName){
     if(!gameName)return 0;
     const searchTerm=gameName.toLowerCase().trim();
-    
     for(let i=0;i<cards.length;i++){
         const card=cards[i];
         const cardGameName=card.getAttribute('data-game')||card.querySelector('.card-title').textContent.trim();
         const acronym=generateAcronym(cardGameName);
-        
         if(cardGameName.toLowerCase()===searchTerm||
            cardGameName.toLowerCase().includes(searchTerm)||
            searchTerm.includes(cardGameName.toLowerCase())||
@@ -624,15 +586,12 @@ async function updateVisitorCount(){
     const visitorCountSpan=document.getElementById('visitCount');
     let initialCount=parseInt(localStorage.getItem('VISITOR_COUNT'))||0;
     visitorCountSpan.textContent=initialCount;
-    
     try{
-        const hasVisited=localStorage.getItem('hasVisited');
+        const hasVisited=sessionStorage.getItem('hasVisited');
         let fetchUrl=GOOGLE_APPS_SCRIPT_URL;
         if(!hasVisited){fetchUrl+='?action=increment'}
-        
         const response=await fetch(fetchUrl);
         const apiCount=await response.text();
-        
         if(!isNaN(parseInt(apiCount))){
             const finalCount=parseInt(apiCount);
             gsap.to({count:initialCount},{
@@ -642,7 +601,7 @@ async function updateVisitorCount(){
                 onUpdate:function(){visitorCountSpan.textContent=Math.round(this.targets()[0].count)},
                 onComplete:function(){
                     localStorage.setItem('VISITOR_COUNT',finalCount);
-                    if(!hasVisited){localStorage.setItem('hasVisited','true')}
+                    if(!hasVisited){sessionStorage.setItem('hasVisited','true')}
                 }
             })
         }
@@ -653,7 +612,6 @@ async function init(){
     injectImageStyles();
     await initDB();
     await renderGameCards();
-    
     const gameFromURL=getGameFromURL();
     if(gameFromURL){
         const gameIndex=findGameIndex(gameFromURL);
@@ -668,9 +626,7 @@ async function init(){
     }else{
         updateCoverflow()
     }
-    
     updateVisitorCount();
-    setInterval(updateVisitorCount,30000)
 }
 
 window.addEventListener('load',init);
